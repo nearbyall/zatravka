@@ -10,13 +10,13 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Body, FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from ..config import Config, load_config
 from ..core.labels import ACCOUNT_ORIGIN, INSIGHT, NATURE, PLATFORM, POST_STATUS, SCORE_LABELS, STATUS, region_short
-from ..export import export_rows, to_csv, to_json, to_markdown, to_xlsx
+from ..export import FORMATS, export_file_name, export_rows
 from ..storage.accounts import accounts_by_direction
 from ..storage.db import DB, loads
 from ..storage.directions import (directions_overview, get_direction, set_direction_enabled,
@@ -267,19 +267,13 @@ def create_app(cfg: Config | None = None) -> FastAPI:
 
     @app.get("/export.{fmt}")
     def export(request: Request, fmt: str) -> Response:
-        if fmt not in ("xlsx", "csv", "json", "md"):
+        export_format = FORMATS.get(fmt)
+        if not export_format:
             raise HTTPException(404)
-        f = filters_from(request)
-        rows, _ = query_ideas(db, limit=10000, **f)
-        items = export_rows(db, rows)
-        name = f"ideas-{datetime.now():%Y%m%d-%H%M}.{fmt}"
-        disposition = {"Content-Disposition": f'attachment; filename="{name}"'}
-        if fmt == "xlsx":
-            return Response(to_xlsx(items, tax), headers=disposition,
-                            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        body = {"csv": to_csv, "json": to_json, "md": to_markdown}[fmt](items)
-        media = {"csv": "text/csv", "json": "application/json", "md": "text/markdown"}[fmt]
-        return PlainTextResponse(body, media_type=f"{media}; charset=utf-8", headers=disposition)
+        rows, _ = query_ideas(db, limit=10000, **filters_from(request))
+        content = export_format.render(export_rows(db, rows), tax)
+        disposition = {"Content-Disposition": f'attachment; filename="{export_file_name(fmt)}"'}
+        return Response(content, headers=disposition, media_type=export_format.media_type)
 
     # ── посты ───────────────────────────────────────────────────────────
     @app.get("/posts", response_class=HTMLResponse)
