@@ -1,8 +1,8 @@
-# Демон по расписанию + веб-интерфейс на одной базе SQLite (data/ideaminer.db).
-#   docker compose up -d --build      — запустить оба (демон тратит ИИ-бюджет по расписанию)
-#   docker compose up -d web          — только интерфейс, без автоматических прогонов
-#   docker compose logs -f worker     — смотреть прогоны
-#   docker compose down               — остановить (данные в ./data сохраняются)
+# The scheduled daemon and the web UI share one SQLite database (data/ideaminer.db).
+#   docker compose up -d --build    start both (the daemon spends the LLM budget on schedule)
+#   docker compose up -d web        the UI only, no scheduled runs
+#   docker compose logs -f worker   follow the runs
+#   docker compose down             stop (data in ./data is kept)
 services:
   worker:
     build: .

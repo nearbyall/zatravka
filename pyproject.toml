@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ideaminer"
 version = "0.1.0"
-description = "Автоматический поиск продуктовых идей в лентах Reddit, X и Threads с помощью ИИ"
+description = "Automated discovery of product ideas in Reddit, X and Threads feeds with an LLM"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

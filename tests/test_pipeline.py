@@ -60,9 +60,9 @@ def test_full_pipeline(ctx, fake_reddit):
     remind = next(i for i in clusters if i["title"].startswith("Напоминалка"))
     assert remind["market"] == "B2C" and remind["sphere"] == "home" and remind["nature"] == "digital"
     assert loads(remind["spheres_json"]) == ["hobbies"]
-    # «СНГ» нормализуется по подписи в ключ cis, а «global» рядом с конкретными регионами отбрасывается
+    # the "СНГ" label maps to the cis key, and "global" next to concrete regions is dropped
     assert loads(remind["regions_json"]) == ["cis", "eu"] and remind["origin_region"] == "north_america"
-    assert remind["base_score"] == 6.15 and remind["score"] == 6.55  # + бонус за 2 упоминания
+    assert remind["base_score"] == 6.15 and remind["score"] == 6.55  # plus the bonus for 2 mentions
     verified = {r["quote_verified"] for r in db.query(
         "SELECT e.quote_verified FROM idea_evidence e JOIN ideas i ON i.id=e.idea_id WHERE i.insight_type='explicit'")}
     assert verified == {1}
@@ -78,11 +78,11 @@ def test_full_pipeline(ctx, fake_reddit):
     assert run["status"] == "ok" and stats["extract"]["ideas"] == 4 and run["cost_usd"] > 0
     assert db.kv_get("run_lock") is None
 
-    # Повторная обработка без сбора ничего не ломает и не плодит дублей
+    # Reprocessing without collection breaks nothing and creates no duplicates
     again = run_once(ctx, collect=False)
     assert again["status"] == "ok" and db.scalar("SELECT COUNT(*) FROM ideas") == 4
 
-    assert query_ideas(db, region="cis")[1] == 2  # своя + глобальная
+    assert query_ideas(db, region="cis")[1] == 2  # its own plus the global one
     assert query_ideas(db, region="cis", with_global=False)[1] == 1
     assert query_ideas(db, region="latam", with_global=False)[1] == 0
     assert query_ideas(db, origin="north_america")[1] == 2
@@ -96,7 +96,7 @@ def test_full_pipeline(ctx, fake_reddit):
 
     all_rows, _ = query_ideas(db)
     all_items = export_rows(db, all_rows)
-    all_items[0]["note"] = "=HYPERLINK(\"http://evil\")"  # текст из поста не должен стать формулой
+    all_items[0]["note"] = "=HYPERLINK(\"http://evil\")"  # post text must not become a formula
     wb = load_workbook(io.BytesIO(to_xlsx(all_items, resolve_taxonomy(ctx.cfg))))
     assert wb.sheetnames == ["Идеи", "Источники", "Сфера × рынок", "Сфера × регион"]
     ideas_ws = wb["Идеи"]
@@ -126,7 +126,7 @@ def test_full_pipeline(ctx, fake_reddit):
 
 
 def test_budget_stops_run_gracefully(ctx, fake_reddit):
-    ctx.cfg.budget.per_run_usd = 0.0003  # хватит ровно на один вызов (≈ $0.0005)
+    ctx.cfg.budget.per_run_usd = 0.0003  # enough for exactly one call (≈ $0.0005)
     res = run_once(ctx, only_directions=["pain_hunting"])
     assert res["status"] == "budget"
     assert ctx.db.scalar("SELECT COUNT(*) FROM posts WHERE status IN ('promising','candidate')") > 0
@@ -202,9 +202,9 @@ def test_region_focus_and_hints(ctx, fake_reddit):
     assert not any(d.startswith("region_") and d != "region_cis" for d in plan.directions)
     run_once(ctx, only_directions=["region_cis"])
     hints = {r["region_hint"] for r in ctx.db.query("SELECT region_hint FROM posts")}
-    assert hints == {"cis"}  # пришло из направления, хотя посты англоязычные
+    assert hints == {"cis"}  # comes from the direction although the posts are in English
     ideas = ctx.db.query("SELECT origin_region FROM ideas WHERE origin_region IS NOT NULL")
-    assert ideas and {i["origin_region"] for i in ideas} == {"cis"}  # подсказка дошла до классификатора
+    assert ideas and {i["origin_region"] for i in ideas} == {"cis"}  # the hint reached the classifier
 
 
 def test_threads_token_refresh(ctx, monkeypatch):
@@ -214,8 +214,8 @@ def test_threads_token_refresh(ctx, monkeypatch):
     calls = []
     monkeypatch.setattr(th, "refresh_token", lambda t: calls.append(t) or {"access_token": f"fresh-{len(calls)}"})
     assert th.ensure_token(ctx.cfg, ctx.db) == "fresh-1"
-    assert th.ensure_token(ctx.cfg, ctx.db) == "fresh-1" and len(calls) == 1  # раньше трёх дней не продлеваем
-    monkeypatch.setenv("THREADS_ACCESS_TOKEN", "new-env-token")  # положили новый токен в .env
+    assert th.ensure_token(ctx.cfg, ctx.db) == "fresh-1" and len(calls) == 1  # no refresh within three days
+    monkeypatch.setenv("THREADS_ACCESS_TOKEN", "new-env-token")  # a new token was put into .env
     assert th.ensure_token(ctx.cfg, ctx.db) == "fresh-2" and calls[-1] == "new-env-token"
 
 
@@ -232,14 +232,14 @@ def test_boost_regions_raises_odds(ctx):
         ctx.cfg.planner.boost_regions = {"cis": 3} if seed % 2 else {}
         cis = sum(1 for k in make_plan(ctx).directions if k.startswith(("region_cis", "cis_")))
         counts["boost" if seed % 2 else "plain"] += cis
-    # 7 направлений СНГ из 46: без усиления ≈ 0.6 на прогон, с ×3 ≈ 1.2 (доля epsilon — чистый случай)
+    # 7 CIS directions of 46: ≈ 0.6 per run without a boost, ≈ 1.2 with ×3 (the epsilon share is pure chance)
     assert counts["boost"] > counts["plain"] * 1.4
 
 
 def test_scoped_run_processes_only_its_posts(ctx, fake_reddit):
     from ideaminer.core.models import RawPost
     from ideaminer.storage.posts import insert_posts
-    # В очереди — хвост Reddit с сильными сигналами; прогон по X не должен его трогать
+    # The queue holds a Reddit backlog with strong signals; a run limited to X must leave it alone
     backlog = [RawPost(platform="reddit", ext_id=f"t3_old{i}", url=f"https://reddit.com/{i}", author="a",
                        title="Is there an app for this? I would pay", body="I hate doing this manually " * 5,
                        created_at=None, direction="pain_hunting", feed="reddit:listing:smallbusiness")
@@ -263,6 +263,6 @@ def test_scoped_run_processes_only_its_posts(ctx, fake_reddit):
         pl.run_explore = orig
     assert res["status"] == "ok" and calls
     by_platform = {r["platform"]: r["status"] for r in ctx.db.query("SELECT platform, status FROM posts")}
-    assert by_platform["reddit"] == "candidate"  # хвост не тронут
+    assert by_platform["reddit"] == "candidate"  # the backlog is untouched
     assert by_platform["x"] in ("extracted", "skipped", "promising")
-    assert not explored and not ctx.scope  # прицельный прогон не ищет направления; область сброшена
+    assert not explored and not ctx.scope  # a limited run does not explore, and the scope is reset

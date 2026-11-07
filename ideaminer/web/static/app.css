@@ -1,4 +1,4 @@
-/* ideaminer — «пробирный лист»: холодная известняковая бумага, кобальт, минеральные метки типа идеи */
+/* Assay sheet: cool limestone paper, cobalt ink and mineral marks for idea types. */
 
 :root {
   --paper: #f3f5f4;
@@ -86,7 +86,7 @@ h2 { font-size: 1.125rem; font-weight: 600; }
 .skip { position: absolute; left: -9999px; }
 .skip:focus { left: 16px; top: 8px; background: var(--raised); padding: 8px 12px; z-index: 20; }
 
-/* ── верхняя панель ─────────────────────────────────────────────────── */
+/* Top bar */
 .top { border-bottom: 1px solid var(--rule); background: var(--paper); position: sticky; top: 0; z-index: 10; }
 .top-in { max-width: 1200px; margin: 0 auto; padding: 10px var(--gutter); display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 .mark { display: flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font: 700 1.05rem/1 var(--font-display); letter-spacing: -.01em; }
@@ -101,7 +101,7 @@ h2 { font-size: 1.125rem; font-weight: 600; }
 .spend-bar { width: 44px; height: 4px; border-radius: 2px; background: var(--rule); position: relative; overflow: hidden; }
 .spend-bar::after { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--t) * 100%); background: var(--accent); border-radius: 2px; }
 
-/* ── кнопки и поля ──────────────────────────────────────────────────── */
+/* Buttons and fields */
 .btn {
   display: inline-flex; align-items: center; gap: 6px; font: 500 .9375rem/1 var(--font-body);
   padding: 9px 14px; border-radius: var(--r-s); border: 1px solid var(--rule-strong);
@@ -124,14 +124,14 @@ h2 { font-size: 1.125rem; font-weight: 600; }
 }
 .field textarea { resize: vertical; line-height: 1.45; }
 
-/* ── каркас ─────────────────────────────────────────────────────────── */
+/* Layout */
 .wrap { max-width: 1200px; margin: 0 auto; padding: 28px var(--gutter) 80px; }
 .lede { max-width: 72ch; margin-bottom: 28px; }
 .lede h1 { font: 700 clamp(1.6rem, 3.2vw, 2.25rem)/1.1 var(--font-display); letter-spacing: -.02em; margin-bottom: 10px; }
 .lede p { color: var(--ink-2); margin: 0; }
 .crumbs { margin: 0 0 16px; color: var(--ink-3); font-size: .9rem; }
 
-/* ── карта «сфера × рынок» ──────────────────────────────────────────── */
+/* Sphere × market map */
 .map { margin-bottom: 32px; }
 .map-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 12px; }
 .map-head p { margin: 0; color: var(--ink-3); font-size: .875rem; }
@@ -162,7 +162,7 @@ h2 { font-size: 1.125rem; font-weight: 600; }
 }
 .heat-total { color: var(--ink-3); font-size: .8125rem; padding-left: 10px !important; text-align: right; }
 
-/* ── фильтры ────────────────────────────────────────────────────────── */
+/* Filters */
 .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 14px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 16px; }
 .filters .field { flex: 0 1 170px; }
 .filters .field-q { flex: 1 1 240px; }
@@ -199,7 +199,7 @@ a.chip-region:hover { box-shadow: inset 0 0 0 1px var(--accent); background: tra
 .badge-error, .badge-run-error { background: color-mix(in oklab, var(--warn) 25%, var(--raised)); color: var(--ink); }
 .badge-run-budget { background: color-mix(in oklab, var(--explicit) 25%, var(--raised)); color: var(--ink); }
 
-/* ── балл: главный акцент страницы ──────────────────────────────────── */
+/* Score, the main accent of the page */
 .grade { display: flex; flex-direction: column; gap: 6px; width: 64px; flex: none; padding-top: 2px; }
 .grade-num { font: 700 1.625rem/1 var(--font-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .grade-bar { height: 3px; width: 100%; border-radius: 2px; background: var(--rule); position: relative; }
@@ -208,7 +208,7 @@ a.chip-region:hover { box-shadow: inset 0 0 0 1px var(--accent); background: tra
 .grade-big .grade-num { font-size: 3rem; }
 .grade-big .grade-bar { height: 4px; }
 
-/* ── тип идеи ───────────────────────────────────────────────────────── */
+/* Idea type */
 .insight { display: inline-flex; align-items: center; gap: 6px; font-size: .8125rem; color: var(--ink-2); }
 .insight i { width: 10px; height: 10px; border-radius: 2px; background: var(--ink-3); transform: rotate(45deg); }
 .insight-explicit i { background: var(--explicit); }
@@ -216,7 +216,7 @@ a.chip-region:hover { box-shadow: inset 0 0 0 1px var(--accent); background: tra
 .insight-lateral i { background: var(--lateral); }
 .mentions { font-size: .8125rem; color: var(--ink); font-weight: 500; }
 
-/* ── список идей ────────────────────────────────────────────────────── */
+/* Idea list */
 .ideas { list-style: none; margin: 0; padding: 0; }
 .idea { display: flex; gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--rule); }
 .idea-body { flex: 1; min-width: 0; max-width: 78ch; }
@@ -238,7 +238,7 @@ a.chip-region:hover { box-shadow: inset 0 0 0 1px var(--accent); background: tra
 .empty h2 { font: 700 1.4rem/1.2 var(--font-display); margin-bottom: 10px; }
 .empty p { color: var(--ink-2); }
 
-/* ── карточка идеи ──────────────────────────────────────────────────── */
+/* Idea card */
 .sheet { background: var(--raised); border: 1px solid var(--rule); border-radius: var(--r-m); padding: clamp(18px, 3vw, 36px); }
 .sheet-head { display: flex; gap: 28px; align-items: flex-start; margin-bottom: 20px; }
 .sheet-head h1 { font-size: clamp(1.4rem, 2.6vw, 2rem); font-weight: 600; letter-spacing: -.015em; margin-bottom: 10px; max-width: 30ch; }
@@ -274,7 +274,7 @@ a.chip-region:hover { box-shadow: inset 0 0 0 1px var(--accent); background: tra
 .quote .src { color: var(--ink-3); }
 .plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 
-/* ── таблицы ────────────────────────────────────────────────────────── */
+/* Tables */
 .table-scroll { overflow-x: auto; max-width: 100%; margin-bottom: 24px; }
 .data { width: 100%; border-collapse: collapse; font-size: .9rem; }
 .data th { text-align: left; font-weight: 500; color: var(--ink-3); font-size: .8125rem; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule-strong); white-space: nowrap; }
@@ -300,7 +300,7 @@ a.chip-region:hover { box-shadow: inset 0 0 0 1px var(--accent); background: tra
 .switch[aria-checked="true"] { background: var(--accent); }
 .switch[aria-checked="true"] span { transform: translateX(16px); }
 
-/* ── журнал прогона и уведомления ───────────────────────────────────── */
+/* Run log and toasts */
 .runlog { position: fixed; right: 16px; bottom: 16px; width: min(560px, calc(100vw - 32px)); background: var(--ink); color: var(--paper); border-radius: var(--r-m); padding: 12px 14px; z-index: 30; box-shadow: 0 12px 32px rgba(10, 20, 40, .28); }
 .runlog-head { display: flex; align-items: center; gap: 10px; }
 .runlog-head span { color: color-mix(in oklab, var(--paper) 65%, var(--ink)); font-size: .8125rem; font-variant-numeric: tabular-nums; }
@@ -309,7 +309,7 @@ a.chip-region:hover { box-shadow: inset 0 0 0 1px var(--accent); background: tra
 .runlog-foot { margin-top: 10px; }
 .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: var(--r-s); font-size: .9rem; z-index: 40; }
 
-/* ── узкие экраны ───────────────────────────────────────────────────── */
+/* Narrow screens */
 @media (max-width: 900px) {
   .sheet-grid { grid-template-columns: 1fr; }
   .two { grid-template-columns: 1fr; }

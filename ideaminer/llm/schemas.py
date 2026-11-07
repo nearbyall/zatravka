@@ -1,7 +1,5 @@
-"""Схемы ответов ИИ. Снисходительные: приводят типы, обрезают диапазоны,
-подставляют значения по умолчанию — чтобы мелкая неаккуратность модели
-не стоила повторного платного вызова.
-"""
+"""Schemas of LLM answers. They are lenient: they coerce types, clamp ranges and fill
+defaults, so that a small slip of the model does not cost another paid call."""
 from __future__ import annotations
 
 from typing import Any
@@ -35,7 +33,6 @@ def _str_list(v: Any) -> list[str]:
     return [str(x).strip() for x in v if str(x).strip()]
 
 
-# ── triage ──────────────────────────────────────────────────────────────
 class TriageItem(BaseModel):
     id: int
     score: float = 0
@@ -51,7 +48,6 @@ class TriageOut(BaseModel):
     items: list[TriageItem] = Field(default_factory=list)
 
 
-# ── extract ─────────────────────────────────────────────────────────────
 INSIGHT_TYPES = ("explicit", "implicit", "lateral")
 
 
@@ -83,18 +79,11 @@ class IdeaOut(BaseModel):
         return {"явн": "explicit", "неяв": "implicit", "латер": "lateral", "неочев": "lateral"}.get(s[:5], "implicit")
 
 
-class ExtractItem(BaseModel):
-    post_id: int
-    ideas: list[IdeaOut] = Field(default_factory=list)
-    skip_reason: str | None = None
-
-
 class ExtractOut(BaseModel):
     ideas: list[IdeaOut] = Field(default_factory=list)
     skip_reason: str | None = None
 
 
-# ── classify ────────────────────────────────────────────────────────────
 class ClassItem(BaseModel):
     id: int
     market: str = ""
@@ -123,7 +112,6 @@ class ClassifyOut(BaseModel):
     items: list[ClassItem] = Field(default_factory=list)
 
 
-# ── merge ───────────────────────────────────────────────────────────────
 class MergeDecision(BaseModel):
     id: int
     same_as: int | None = None
@@ -143,7 +131,6 @@ class MergeOut(BaseModel):
     decisions: list[MergeDecision] = Field(default_factory=list)
 
 
-# ── explore ─────────────────────────────────────────────────────────────
 class ExploreDirection(BaseModel):
     key: str
     name: str = ""
@@ -161,7 +148,6 @@ class ExploreOut(BaseModel):
     directions: list[ExploreDirection] = Field(default_factory=list)
 
 
-# ── discover accounts ───────────────────────────────────────────────────
 class AccountIdea(BaseModel):
     username: str
     why: str = ""

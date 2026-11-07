@@ -1,49 +1,47 @@
-# ─────────────────────────────────────────────────────────────────────────────
-#  ideaminer — главный конфиг. Код не трогаем: всё настраивается здесь.
-#  Пути относительны этого файла. Секреты лежат в .env (см. .env.example).
-# ─────────────────────────────────────────────────────────────────────────────
+# ideaminer configuration. Paths are relative to this file; secrets live in .env
+# (see .env.example).
 
-# Язык, на котором ИИ формулирует идеи. Цитаты-доказательства остаются на языке оригинала.
+# The language of generated ideas. Evidence quotes stay in the original language.
 output_language: ru
 
 storage:
   db_path: data/ideaminer.db
-  inbox_dir: data/inbox          # сюда можно класть JSON/JSONL/CSV с постами для импорта
+  inbox_dir: data/inbox          # JSON/JSONL/CSV files with posts to import
   exports_dir: data/exports
   digests_dir: data/digests
-  prompts_dir: null              # своя папка с промптами (по умолчанию — ideaminer/prompts)
+  prompts_dir: null              # custom prompts folder (default: ideaminer/prompts)
 
 http:
   user_agent: "ideaminer/0.1 (personal research of public posts)"
   timeout_s: 30
   max_retries: 3
-  max_rate_wait_s: 120           # дольше этого ждать сброса лимита площадки не будем
-  # Минимальная пауза между запросами к одному хосту, сек. Вежливость к площадкам.
+  max_rate_wait_s: 120           # never wait longer than this for a rate limit reset
+  # Minimal pause between requests to one host, seconds.
   min_interval_s:
-    www.reddit.com: 6.0           # публичный RSS Reddit строго лимитирован; клиент ещё и читает x-ratelimit-*
+    www.reddit.com: 6.0           # public Reddit RSS is tightly limited; x-ratelimit-* headers are honoured too
     oauth.reddit.com: 1.0
     api.x.com: 1.5
     graph.threads.net: 1.0
     default: 1.0
 
 schedule:
-  run_every_minutes: 240         # демон запускает полный прогон раз в N минут
-  jitter_minutes: 15             # случайный сдвиг, чтобы не долбить в одно и то же время
-  digest_hour_utc: 6             # раз в сутки после этого часа собирается дайджест
+  run_every_minutes: 240         # the daemon runs the full pipeline every N minutes
+  jitter_minutes: 15             # random shift so runs do not hit the same minute
+  digest_hour_utc: 6             # the daily digest is built after this hour
 
 budget:
-  # ВНИМАНИЕ: ключ DeepSeek общий с demo-проектами. Полный прогон стоит ≈ $0.09,
-  # поэтому дневной лимит пропускает 1–2 прогона. С отдельным ключом поднимите daily_usd.
+  # The DeepSeek key is shared with demo projects. A full run costs ≈ $0.09, so this
+  # daily limit allows 1–2 runs. Raise daily_usd when using a dedicated key.
   daily_usd: 0.15
   per_run_usd: 0.12
 
 llm:
-  providers: [deepseek, replicate]   # порядок = приоритет; следующий — запасной
+  providers: [deepseek, replicate]   # in priority order; the next one is the fallback
   concurrency: 4
   timeout_s: 120
   deepseek:
     base_url: https://api.deepseek.com
-    models:                          # модель на каждый этап
+    models:                          # model per stage
       triage: deepseek-flash
       extract: deepseek-flash
       classify: deepseek-flash
@@ -52,8 +50,8 @@ llm:
   replicate:
     model: openai/gpt-5-mini
     reasoning_effort: minimal
-  # USD за 1M токенов; используется для учёта и бюджета. deepseek-flash откалиброван 2026-11-06
-  # по списаниям с баланса на двух прогонах (≈ ¥2 вход, ¥8 выход за 1M токенов).
+  # USD per 1M tokens, used for accounting and the budget. deepseek-flash was calibrated on
+  # 2026-11-06 against balance charges of two runs (≈ ¥2 input, ¥8 output per 1M tokens).
   prices_usd_per_mtok:
     deepseek-flash:    {in: 0.28,  cached_in: 0.028,  out: 1.10}
     deepseek-v4-pro:   {in: 0.435, cached_in: 0.0036, out: 0.87}
@@ -62,67 +60,68 @@ llm:
 sources:
   reddit:
     enabled: true
-    mode: auto                 # auto: OAuth при наличии ключей, иначе публичный RSS; rss | oauth
-    # Веса случайного выбора типа ленты для каждого фида
+    mode: auto                 # auto: OAuth when keys are set, otherwise public RSS; rss | oauth
+    # Weights for picking the listing type of each feed
     listings: {top_week: 3, hot: 2, new: 1, top_month: 1}
-    # Публичный RSS пускает примерно 1 запрос в минуту, поэтому сабреддиты склеиваются
-    # в мульти-ленты (r/a+b+c), а запросов за прогон немного. С OAuth (100 запросов/мин)
-    # можно смело поднять feeds_per_direction и comments_for_top_posts.
-    subs_per_feed: 6           # сколько сабреддитов в одной мульти-ленте
+    # Public RSS allows about 1 request per minute, so subreddits are combined into
+    # multi-feeds (r/a+b+c) and a run makes few requests. With OAuth (100 requests/min)
+    # feeds_per_direction and comments_for_top_posts can go up.
+    subs_per_feed: 6           # subreddits per multi-feed
     feeds_per_direction: 1
     searches_per_direction: 1
     items_per_feed: 100
-    comments_for_top_posts: 6  # сколько лучших постов прогона (любой площадки) дополнить комментариями
+    comments_for_top_posts: 6  # top posts of a run (any platform) to enrich with comments
     comments_per_post: 15
   x:
-    enabled: auto              # включится, если задан X_BEARER_TOKEN
+    enabled: auto              # on when X_BEARER_TOKEN is set
     queries_per_direction: 1
-    max_results: 10            # 10..100. Чтение платное: $0.005 за пост, 10 постов на запрос ≈ $0.05
-    daily_read_limit: 200      # не больше стольких постов X в сутки (UTC) ≈ $1/день; 0 — без лимита
+    max_results: 10            # 10..100. Reads are paid: $0.005 per post, so 10 posts ≈ $0.05
+    daily_read_limit: 200      # X posts per UTC day ≈ $1/day; 0 means no limit
     query_suffix: "-is:retweet -is:reply"
   threads:
     enabled: auto
-    # auto: официальный API, если задан THREADS_ACCESS_TOKEN, иначе веб-режим; api | web
+    # auto: the official API when THREADS_ACCESS_TOKEN is set, otherwise web mode; api | web
     mode: auto
-    queries_per_direction: 1   # поиск по словам — только через API
+    queries_per_direction: 1   # keyword search works through the API only
     search_type: TOP           # TOP | RECENT
     limit: 25
-    accounts: []               # общие публичные профили (читаются в любом прогоне)
-    accounts_per_direction: 2  # сколько аккаунтов направления читать за прогон (по кругу)
+    accounts: []               # shared public profiles, read in every run
+    accounts_per_direction: 2  # accounts of a direction read per run, round-robin
     global_accounts_per_run: 3
-    # Страница удачного поста показывает 5 «похожих тредов» — близких по теме и языку.
-    # Их авторы добавляются в реестр к направлению поста (до max_accounts_per_direction).
+    # A good post's page shows 5 related threads close in topic and language; their
+    # authors join the post's direction (up to max_accounts_per_direction).
     related_authors: true
     max_accounts_per_direction: 25
-    # Веб-режим: публичные профили и страницы постов (первые ответы) без входа через
-    # headless Chromium. Поиска по словам без входа нет. Автоматический сбор противоречит правилам Meta — на ваш риск.
-    # Аккаунты: `ideaminer accounts add/discover`, поле threads_accounts у направлений.
+    # Web mode reads public profiles and post pages (first replies) logged out through
+    # headless Chromium; there is no keyword search without a login. Automated collection
+    # is against Meta's terms, so use it at your own risk. Accounts come from
+    # `ideaminer accounts add/discover` and the threads_accounts field of directions.
     web:
       enabled: true
-      browser: null            # путь к Chromium; null — найти самому (PATH, кэш Playwright)
-      no_sandbox: true         # на Ubuntu 24.04 песочница Chromium недоступна; в Docker изолирует контейнер
-      min_interval_s: 20       # пауза между страницами
+      browser: null            # Chromium path; null finds it in PATH or the Playwright cache
+      no_sandbox: true         # Ubuntu 24.04 blocks Chromium's sandbox; Docker isolates the container instead
+      min_interval_s: 20       # pause between pages
       render_budget_ms: 12000
-      max_empty_in_row: 3      # столько пустых страниц подряд — и веб-режим выключается до конца прогона
+      max_empty_in_row: 3      # this many empty pages in a row switch web mode off for the run
   rss:
     enabled: true
-    # Любые RSS/Atom-ленты, например свой RSSHub для X/Threads:
+    # Any RSS/Atom feeds, for example a self-hosted RSSHub for X or Threads:
     # - {url: "https://rsshub.example.com/threads/zuck", platform: threads, direction: wildcard}
     feeds: []
   inbox:
-    enabled: true              # импорт файлов из storage.inbox_dir на каждом прогоне
+    enabled: true              # import files from storage.inbox_dir on every run
 
 planner:
-  core_directions: [pain_hunting]   # берутся в каждый прогон
-  # Фокус на регионах, например [cis, eu]: региональные направления других регионов не читаются,
-  # а направления этих регионов идут в каждый прогон. Пусто — без фокуса.
+  core_directions: [pain_hunting]   # included in every run
+  # Regional focus such as [cis, eu]: other regions' directions are skipped and these
+  # regions' directions run every time. Empty means no focus.
   regions: []
-  # Усиление: направления региона выпадают во столько раз чаще, другие регионы остаются в игре
+  # Boost: a region's directions are picked this many times more often; others stay in play
   boost_regions: {cis: 3}
-  random_directions: 4              # сколько ещё направлений выбрать случайно (с учётом их отдачи)
-  wildcard_subreddits: 3            # случайные сабреддиты из пула wildcard_pool
-  epsilon: 0.25                     # доля чистого случая против «эксплуатации» удачных направлений
-  seed: null                        # число для воспроизводимости, null — каждый раз по-новому
+  random_directions: 4              # extra directions sampled by yield
+  wildcard_subreddits: 3            # random subreddits from wildcard_pool
+  epsilon: 0.25                     # share of pure chance versus exploiting good directions
+  seed: null                        # a number for reproducible plans; null means random
 
 prefilter:
   min_chars: 80
@@ -137,7 +136,7 @@ prefilter:
     - "(?i)\\b(hiring|we are hiring|job opening)\\b.*\\b(apply|salary)\\b"
     - "(?i)\\bweekly (thread|discussion|self-promotion)\\b"
     - "(?i)\\bsubscribe to my (channel|newsletter)\\b"
-  # Сигнальные фразы: вес добавляется к предварительной оценке поста
+  # Signal phrases: the weight adds to the post's prefilter score
   signals:
     - {pattern: "(?i)\\bi wish (there (was|were|is)|someone|i could|it)", weight: 3}
     - {pattern: "(?i)\\b(would|i'?d) (happily |gladly )?pay\\b", weight: 3}
@@ -164,13 +163,13 @@ prefilter:
 triage:
   batch_size: 20
   max_posts_per_run: 120
-  threshold: 7                  # от 0 до 10; ниже — пост не идёт на извлечение идей
-  random_share: 0.15            # доля «случайных» постов без сигналов — против туннельного зрения
+  threshold: 7                  # 0..10; posts below it are not extracted
+  random_share: 0.15            # share of random posts without signals, against tunnel vision
   max_body_chars: 1500
 
 extract:
   max_posts_per_run: 25
-  max_share_per_direction: 0.4  # одно направление занимает не больше 40% разбора за прогон
+  max_share_per_direction: 0.4  # one direction takes at most 40% of a run's extraction
   max_ideas_per_post: 4
   max_body_chars: 6000
   max_comment_chars: 2500
@@ -179,12 +178,12 @@ classify:
   batch_size: 12
 
 dedup:
-  candidate_threshold: 0.30     # лексическая похожесть, с которой идеи сравнивает ИИ-судья
-  auto_merge_threshold: 0.80    # выше — объединяем без ИИ
+  candidate_threshold: 0.30     # lexical similarity from which the LLM judge compares ideas
+  auto_merge_threshold: 0.80    # above it ideas merge without the LLM
   llm_judge: true
 
 scoring:
-  # Итоговый балл 0..10 = взвешенная сумма оценок классификатора
+  # The 0..10 score is a weighted sum of the classifier's sub-scores
   weights:
     demand: 0.30
     monetization: 0.20
@@ -192,29 +191,27 @@ scoring:
     feasibility: 0.15
     whitespace: 0.10
     urgency: 0.10
-  mention_bonus: 0.4            # + за каждое удвоение числа упоминаний одной идеи
-  good_idea_threshold: 6.0      # «хорошая» идея — для статистики направлений
+  mention_bonus: 0.4            # added for each doubling of an idea's mentions
+  good_idea_threshold: 6.0      # threshold of a good idea in direction statistics
 
 explore:
   enabled: true
-  every_n_runs: 6               # раз в N прогонов ИИ предлагает новые направления
+  every_n_runs: 6               # the LLM proposes new directions every N runs
   new_directions: 2
-  prune_min_triaged: 80         # ИИ-направление без отдачи после стольких постов отключается
-  prune_min_yield: 0.03         # отключить, если на оценённый пост меньше 0.03 «баллов выше 5»
+  prune_min_triaged: 80         # an LLM direction without yield after this many triaged posts is disabled
+  prune_min_yield: 0.03         # disable below 0.03 points above 5 per triaged post
 
 digest:
   top_n: 15
   min_score: 6.0
-  telegram: false               # нужен TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID
+  telegram: false               # needs TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID
 
 web:
   host: 127.0.0.1
   port: 8610
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Таксономия. Ключи — машинные, значения — подписи. Изменили — запустите
-#  `ideaminer reclassify --all`, и ИИ переразметит все идеи.
-# ─────────────────────────────────────────────────────────────────────────────
+# Taxonomy: keys are machine names, values are labels. After changing it run
+# `ideaminer reclassify --all` to relabel every idea.
 taxonomy:
   markets:
     B2B: "Бизнесу (компании, ИП, профессионалы как покупатели)"
@@ -276,7 +273,7 @@ taxonomy:
     security_privacy: "Безопасность и приватность"
     healthcare_pro: "Медицина как отрасль (клиники, врачи, фарма)"
     other: "Другое"
-  # Регионы: где идею можно запустить и откуда пришёл сигнал
+  # Regions: where an idea can launch and where its signal came from
   regions:
     global: "Глобально (не зависит от страны)"
     north_america: "Северная Америка (США, Канада)"
@@ -290,7 +287,7 @@ taxonomy:
     east_asia: "Восточная и Юго-Восточная Азия"
     oceania: "Австралия и Океания"
 
-# Пул для случайных «диких» сабреддитов: здесь живут бытовые боли и спрос на вещи
+# Pool of random wildcard subreddits, full of everyday pains and demand for things
 wildcard_pool:
   - shutupandtakemymoney
   - INEEEEDIT
@@ -333,13 +330,10 @@ wildcard_pool:
   - Landlord
   - AmazonSeller
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Направления исследования. Каждый прогон берёт core_directions + несколько
-#  случайных (направления с лучшей отдачей выпадают чаще). ИИ-исследователь
-#  со временем добавляет свои направления в БД (видны во вкладке «Направления»).
-#  Поля: subreddits, reddit_search (поиск по Reddit), x_queries (синтаксис X API v2),
-#  threads_queries (ключевые слова Threads), weight (базовый вес).
-# ─────────────────────────────────────────────────────────────────────────────
+# Research directions. Every run takes core_directions plus a few random ones,
+# favouring those with better yield; the LLM explorer adds its own over time.
+# Fields: subreddits, reddit_search, x_queries (X API v2 syntax), threads_queries,
+# threads_accounts, region and weight.
 directions:
   pain_hunting:
     name: "Охота за болями (универсально)"
@@ -354,8 +348,8 @@ directions:
       - '"why is there no app"'
       - '"looking for a tool"'
       - '"is there a tool"'
-    # X берёт деньги за отданные посты, а не за запросы: фразы склеены через OR,
-    # чтобы каждый запрос заполнял все max_results мест
+    # X bills returned posts rather than requests, so phrases are joined with OR
+    # to fill every max_results slot
     x_queries:
       - '("I wish there was an app" OR "wish there was a tool" OR "someone should build" OR "someone needs to make an app") lang:en'
       - '("I would pay for" OR "I''d pay for" OR "shut up and take my money") (app OR tool OR service) lang:en'
@@ -578,7 +572,7 @@ directions:
     x_queries: ['(nurse OR physician OR pharmacist) ("charting" OR "paperwork") ("hate" OR "hours") lang:en']
     threads_queries: ["nurse charting burnout", "врач бумажная работа"]
 
-  # ── Региональные направления: поле region подсказывает классификатору, откуда сигнал ──
+  # Regional directions: the region field tells the classifier where the signal comes from
   region_cis:
     name: "СНГ: русскоязычные сообщества"
     region: cis
@@ -655,7 +649,7 @@ directions:
     x_queries: ['("in Australia" OR "in New Zealand") ("wish there was" OR "is there an app") lang:en']
     threads_queries: ["Australia is there an app", "NZ wish there was"]
 
-  # ── СНГ по темам: в первую очередь X на русском (лексика жалоб, а не вежливые вопросы) ──
+  # CIS by topic, mostly Russian-language X (complaint wording rather than polite questions)
   cis_sellers:
     name: "СНГ: селлеры Wildberries и Ozon"
     region: cis

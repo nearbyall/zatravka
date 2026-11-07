@@ -55,7 +55,7 @@ def test_verify_quote():
 def test_select_diverse():
     rows = [{"id": i, "direction": "shop"} for i in range(8)] + [{"id": 100 + i, "direction": d} for i, d in enumerate("ab")]
     got = select_diverse(rows, 5, 0.4)
-    assert [r["id"] for r in got] == [0, 1, 100, 101, 2]  # 2 из «shop», затем другие, остаток — снова лучшие
+    assert [r["id"] for r in got] == [0, 1, 100, 101, 2]  # 2 from "shop", then the others, the rest again the best
     assert len(select_diverse(rows[:3], 5, 0.4)) == 3
     assert [r["id"] for r in select_diverse(rows, 3, 1.0)] == [0, 1, 2]
 

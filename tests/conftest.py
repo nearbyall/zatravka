@@ -16,7 +16,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 
 class FakeProvider:
-    """ИИ-провайдер для тестов: отвечает функцией от (system, user)."""
+    """A test LLM provider that answers with a function of (system, user)."""
     name = "fake"
     key = "test"
 
@@ -34,7 +34,7 @@ class FakeProvider:
 
 
 def smart_llm(system: str, user: str) -> str:
-    """Правдоподобные ответы на каждую стадию по тексту промпта."""
+    """Plausible answers for each stage, recognised by the prompt text."""
     if "скаут" in system:
         ids = [int(x) for x in re.findall(r"### id=(\d+)", user)]
         return json.dumps({"items": [{"id": i, "score": 8 if "wish" in user.lower() else 3,
@@ -73,8 +73,8 @@ def smart_llm(system: str, user: str) -> str:
 
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
-    """Тесты не ходят в сеть: настоящий X стоит денег, а Reddit режет частые запросы.
-    TestClient FastAPI работает через свой транспорт и не затрагивается."""
+    """Tests never touch the network: real X reads cost money and Reddit throttles.
+    FastAPI's TestClient has its own transport and is not affected."""
     import httpx
 
     def blocked(self, request):
@@ -94,8 +94,8 @@ def cfg(tmp_path):
         "http": {"min_interval_s": {"default": 0}},
         "prefilter": {"max_age_days": 100000},
     })
-    c.secrets = Secrets()  # настоящие ключи из .env тестам не нужны и опасны
-    c.sources.threads.web.enabled = False  # настоящий Chromium в тестах не запускаем
+    c.secrets = Secrets()  # real keys from .env are useless and risky in tests
+    c.sources.threads.web.enabled = False  # never launch a real Chromium in tests
     return c
 
 

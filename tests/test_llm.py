@@ -37,7 +37,7 @@ def test_fallback_to_next_provider(ctx):
     ctx.llm.providers = [Down(lambda s, u: ""), backup]
     assert ctx.llm.json("triage", "s", "u", TriageOut).items == []
     assert "down" in ctx.llm._down
-    assert ctx.llm.json("triage", "s", "u", TriageOut).items == []  # упавший больше не дёргается
+    assert ctx.llm.json("triage", "s", "u", TriageOut).items == []  # a provider that is down is not called again
     assert len(backup.calls) == 2
 
 
@@ -49,12 +49,12 @@ def test_all_providers_fail(ctx):
 
 def test_budget_guard(ctx):
     from ideaminer.llm import Usage
-    per_call = ctx.llm._cost("deepseek-flash", Usage(1000, 200, 0))  # столько стоит один вызов FakeProvider
+    per_call = ctx.llm._cost("deepseek-flash", Usage(1000, 200, 0))  # the cost of one FakeProvider call
     assert per_call > 0
     ctx.cfg.budget.daily_usd = per_call * 2.5
     ctx.llm.providers = [FakeProvider(lambda s, u: '{"items": []}')]
     ctx.llm.json("triage", "s", "u", TriageOut)
     ctx.llm.json("triage", "s", "u", TriageOut)
-    ctx.llm.json("triage", "s", "u", TriageOut)  # перед третьим вызовом потрачено 2 × per_call < лимита
+    ctx.llm.json("triage", "s", "u", TriageOut)  # before the third call 2 × per_call is still under the limit
     with pytest.raises(BudgetExceeded):
         ctx.llm.json("triage", "s", "u", TriageOut)

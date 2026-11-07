@@ -1,4 +1,3 @@
-// ideaminer: статусы идей, заметки, переключатели направлений, запуск прогона.
 (() => {
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -23,7 +22,7 @@
     toastTimer = setTimeout(() => (el.hidden = true), 2600);
   }
 
-  // Тема: системная по умолчанию, ручной выбор запоминается
+  // Theme follows the system until the user picks one, which is remembered.
   $("#theme-btn")?.addEventListener("click", () => {
     const root = document.documentElement;
     const dark = root.dataset.theme
@@ -33,15 +32,13 @@
     try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
   });
 
-  // Фильтры применяются сразу при выборе
   $$("[data-autosubmit]").forEach((el) => el.addEventListener("change", () => el.form.requestSubmit()));
-  // «и глобальные»: чекбокс пишет 1/0 в скрытое поле, чтобы выключенное состояние тоже уходило в запрос
+  // The "and global" checkbox writes 1/0 to a hidden field so the unchecked state is submitted too.
   $$("[data-glob-toggle]").forEach((cb) => cb.addEventListener("change", () => {
     $("[data-glob]", cb.form).value = cb.checked ? "1" : "0";
     cb.form.requestSubmit();
   }));
 
-  // Статус идеи
   document.addEventListener("click", async (ev) => {
     const btn = ev.target.closest("[data-status]");
     if (!btn) return;
@@ -68,7 +65,7 @@
     }
   });
 
-  // Заметка сохраняется, когда поле теряет фокус или через секунду после ввода
+  // Notes save on blur or a second after typing stops.
   $$("[data-note]").forEach((ta) => {
     let timer;
     const saved = $("[data-saved]");
@@ -82,7 +79,6 @@
     ta.addEventListener("blur", () => { clearTimeout(timer); save(); });
   });
 
-  // Включение направлений
   $$("[data-toggle-direction]").forEach((sw) =>
     sw.addEventListener("click", async () => {
       try {
@@ -93,7 +89,6 @@
     })
   );
 
-  // Прогон из интерфейса с живым журналом
   const runBtn = $("#run-btn");
   const log = $("#runlog");
   let polling = null;

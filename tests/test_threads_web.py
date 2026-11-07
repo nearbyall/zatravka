@@ -45,8 +45,8 @@ def test_parse_rendered_merges_author_chain():
     html = page([
         [post(1, "alice", "Задолбало вести учёт в экселе."), post(2, "alice", "Есть ли нормальный сервис?"),
          post(3, "bob", "чужой ответ")],
-        [post(4, "alice", None)],  # только картинка
-        [post(1, "alice", "обрезок")],  # тот же тред в другом блоке, неполный
+        [post(4, "alice", None)],  # an image only
+        [post(1, "alice", "обрезок")],  # the same thread in another block, truncated
     ])
     posts = parse_rendered(html, "region_cis", "feed")
     assert len(posts) == 1
@@ -74,7 +74,7 @@ def test_backend_selection(web_cfg, ctx):
     api = ThreadsApiBackend(web_cfg, ctx.http)
     src = ThreadsSource(web_cfg, ctx.http, ctx.db, backends={"api": api, "web": web})
     assert src.status() == (True, "публичные профили без входа (headless-браузер)")
-    assert src.kinds() == {"profile", "post"}  # без токена поиска по словам нет
+    assert src.kinds() == {"profile", "post"}  # no keyword search without a token
     web_cfg.secrets.threads_access_token = "t"
     assert src.kinds() == {"keyword", "profile"} and src.status()[1] == "официальный Threads API"
     web_cfg.sources.threads.mode = "web"
@@ -92,27 +92,27 @@ def test_plan_reads_accounts_round_robin(web_cfg, ctx):
     add_account(ctx.db, "threads", "global_guy", None)
     d = Direction(key="region_cis", threads_queries=["есть ли сервис"])
     feeds = src.plan(d, random.Random(1))
-    assert [f.kind for f in feeds] == ["profile", "profile"]  # accounts_per_direction=2, поиска нет
+    assert [f.kind for f in feeds] == ["profile", "profile"]  # accounts_per_direction=2 and no search
     for f in feeds:
         src.fetch(f)
     third = src.plan(d, random.Random(2))
-    assert {f.target for f in third} & ({"alice", "bob", "carol"} - {f.target for f in feeds})  # по кругу
+    assert {f.target for f in third} & ({"alice", "bob", "carol"} - {f.target for f in feeds})  # round-robin
     assert [f.target for f in src.plan_global(random.Random())] == ["global_guy"]
 
 
 def test_circuit_breaker_and_probe(web_cfg, ctx):
     browser = FakeBrowser([LOGIN])
     web = ThreadsWebBackend(web_cfg, browser)
-    with pytest.raises(ProfileUnavailable):  # проверка нового имени: страница входа = нет аккаунта
+    with pytest.raises(ProfileUnavailable):  # probing a new name: a login page means no such account
         web.fetch(FeedSpec("threads", "profile", "ghost", "d", {"probe": 1}))
-    assert web.status()[0]  # и это не повод выключать режим
+    assert web.status()[0]  # and that is no reason to switch the mode off
     for _ in range(3):
         assert web.fetch(FeedSpec("threads", "profile", "alice", "d")) == []
     ok, why = web.status()
     assert not ok and "отключён" in why
     with pytest.raises(SourceUnavailable):
         web.fetch(FeedSpec("threads", "profile", "alice", "d"))
-    assert len(browser.urls) == 4  # после отключения браузер больше не дёргается
+    assert len(browser.urls) == 4  # once switched off, the browser is not called again
 
 
 def test_accounts_registry(ctx):
@@ -122,8 +122,8 @@ def test_accounts_registry(ctx):
     add_account(ctx.db, "threads", "alice", "d")
     for _ in range(3):
         record_account_fetch(ctx.db, "threads", "alice", 0)
-    assert pick_accounts(ctx.db, "threads", "d", 5, random.Random()) == []  # трижды пусто — выключен
-    add_account(ctx.db, "threads", "@alice", "d", origin="manual")  # ручное добавление включает обратно
+    assert pick_accounts(ctx.db, "threads", "d", 5, random.Random()) == []  # empty three times, so disabled
+    add_account(ctx.db, "threads", "@alice", "d", origin="manual")  # a manual addition re-enables it
     assert pick_accounts(ctx.db, "threads", "d", 5, random.Random()) == ["alice"]
 
 
@@ -152,11 +152,11 @@ def test_discover_accounts_validates(web_cfg, ctx):
     assert discover_accounts(ctx, "region_cis", 4) == ["real_seller"]
     row = ctx.db.one("SELECT direction, origin, note FROM accounts WHERE username='real_seller'")
     assert row == {"direction": "region_cis", "origin": "llm", "note": "селлер маркетплейсов"}
-    assert ctx.sources["threads"].status()[0]  # выдуманные имена не выключили веб-режим
+    assert ctx.sources["threads"].status()[0]  # invented names did not switch web mode off
 
 
 def relay(name, data):
-    """Запись, в которой сервер Threads кладёт в страницу готовый ответ Relay-запроса."""
+    """The entry in which the Threads server embeds a ready Relay query result into the page."""
     return ["RelayPrefetchedStreamCache", "next", [], [f"adp_{name}RelayPreloader_abc", {"__bbox": {"result": {"data": data}}}]]
 
 
@@ -188,7 +188,7 @@ def test_parse_post_page():
     page = parse_post_page(html, "cis_smb_admin")
     assert page.found
     assert [(c.author, c.body) for c in page.replies] == [
-        ("dave", "Есть сервис, но дорогой"),  # закреплённый — первым и без повтора
+        ("dave", "Есть сервис, но дорогой"),  # the pinned reply comes first and only once
         ("bob", "Плачу 5 тысяч в месяц, а толку ноль"),
         ("alice (автор)", "Вот-вот"),
     ]
@@ -220,4 +220,4 @@ def test_enrich_takes_replies_and_adopts_related_authors(web_cfg, ctx):
     row = ctx.db.one("SELECT comments_json FROM posts")
     assert [c["body"] for c in loads(row["comments_json"])] == ["Плачу 5 тысяч в месяц, а толку ноль"]
     rows = ctx.db.query("SELECT username, direction, origin FROM accounts WHERE origin='related'")
-    assert rows == [{"username": "eve", "direction": "cis_smb_admin", "origin": "related"}]  # потолок 2 = alice + eve
+    assert rows == [{"username": "eve", "direction": "cis_smb_admin", "origin": "related"}]  # a cap of 2 means alice and eve

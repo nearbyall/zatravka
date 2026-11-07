@@ -23,7 +23,7 @@ def test_reddit_rss_listing():
     assert "submitted by" not in p.body and "[comments]" not in p.body
     assert "& syncs" in p.body
     assert p.created_at.isoformat() == "2026-11-05T09:00:00+00:00"
-    assert posts[1].body == ""  # пост-картинка без текста
+    assert posts[1].body == ""  # an image post without text
 
 
 def test_reddit_rss_comments_skip_post_and_deleted():
@@ -134,6 +134,6 @@ def test_x_daily_read_limit(cfg, ctx, monkeypatch):
     assert len(src.fetch(feed)) == 10 and len(src.fetch(feed)) == 10
     assert src.reads_today() == 20
     with pytest.raises(SourceLimitReached):
-        src.fetch(feed)  # 20 + 10 > 25 — запрос даже не уходит
+        src.fetch(feed)  # 20 + 10 > 25, so the request is not even sent
     assert len(calls) == 2 and calls[0]["query"] == '("a" OR "b") -is:retweet -is:reply'
-    assert "start_time" not in calls[0] and calls[1]["start_time"].endswith("Z")  # второй раз — только новее
+    assert "start_time" not in calls[0] and calls[1]["start_time"].endswith("Z")  # the second time only newer posts
