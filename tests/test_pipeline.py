@@ -219,7 +219,7 @@ def test_threads_token_refresh(ctx, monkeypatch):
 
 
 def test_http_error_hides_tokens():
-    from ideaminer.http import HttpError
+    from ideaminer.net.http import HttpError
     e = HttpError(400, "https://graph.threads.net/v1.0/me?access_token=SECRET&fields=id", "")
     assert "SECRET" not in str(e) and "access_token=***" in str(e)
 

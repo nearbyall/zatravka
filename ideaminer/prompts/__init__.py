@@ -1,5 +1,5 @@
-"""Промпты лежат в .md-файлах рядом — правятся без изменения кода.
-Подстановки — $имя (string.Template), чтобы фигурные скобки JSON не мешали."""
+"""Prompts live in the .md files next to this module and are edited without touching code.
+Placeholders use $name (string.Template) so that JSON braces need no escaping."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -10,7 +10,7 @@ LANG_NAMES = {"ru": "русский", "en": "английский", "uk": "ук�
 
 def render(prompts_dir: Path, name: str, **values: object) -> str:
     path = prompts_dir / f"{name}.md"
-    if not path.exists():  # своя папка может переопределять только часть промптов
+    if not path.exists():  # a custom prompts_dir may override only some prompts
         path = Path(__file__).parent / f"{name}.md"
     text = path.read_text(encoding="utf-8")
     if "language" in values:

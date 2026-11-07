@@ -11,7 +11,7 @@ import re
 import time
 from urllib.parse import quote, urlencode
 
-from ..http import HttpError
+from ..net.http import HttpError
 from ..core.dates import parse_dt
 from ..core.selection import sample, weighted_choice
 from ..core.models import Comment, FeedSpec, RawPost

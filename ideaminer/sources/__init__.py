@@ -12,7 +12,7 @@ from .x import XSource
 if TYPE_CHECKING:
     from ..config import Config
     from ..storage.db import DB
-    from ..http import PoliteHttp
+    from ..net.http import PoliteHttp
 
 ALL = (RedditSource, XSource, ThreadsSource, RssSource, InboxSource)
 

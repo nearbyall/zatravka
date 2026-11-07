@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from ..core.dates import iso, parse_dt
 from ..core.models import FeedSpec
 from ..core.prefilter import evaluate
-from ..http import HttpError, redact
+from ..net.http import HttpError, redact
 from ..sources.base import SourceLimitReached
 from ..storage.directions import regions_by_direction
 from ..storage.feeds import record_feed_fetch

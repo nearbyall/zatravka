@@ -6,7 +6,7 @@
 """
 from __future__ import annotations
 
-from ...http import redact
+from ...net.http import redact
 from ...core.dates import parse_dt
 from ...core.models import FeedSpec, RawPost
 

@@ -1,10 +1,11 @@
-"""Загрузка config.yaml и .env в типизированные настройки.
+"""Typed settings loaded from config.yaml and .env.
 
-Все разделы имеют значения по умолчанию, поэтому в config.yaml можно оставлять
-только то, что отличается. Пути считаются относительно папки конфига.
+Every section has defaults, so config.yaml only needs what differs. Relative
+paths resolve against the config file's directory.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 from typing import Any
@@ -109,8 +110,8 @@ class ThreadsCfg(BaseModel):
     accounts: list[str] = Field(default_factory=list)
     accounts_per_direction: int = 2
     global_accounts_per_run: int = 3
-    related_authors: bool = True          # авторов «похожих тредов» — в реестр аккаунтов
-    max_accounts_per_direction: int = 25  # потолок реестра для автоматического пополнения
+    related_authors: bool = True
+    max_accounts_per_direction: int = 25
     web: ThreadsWebCfg = Field(default_factory=ThreadsWebCfg)
 
 
@@ -144,8 +145,8 @@ class Planner(BaseModel):
     wildcard_subreddits: int = 3
     epsilon: float = 0.25
     seed: int | None = None
-    regions: list[str] = Field(default_factory=list)  # фокус: региональные направления только этих регионов
-    boost_regions: dict[str, float] = Field(default_factory=dict)  # множитель веса направлений региона
+    regions: list[str] = Field(default_factory=list)
+    boost_regions: dict[str, float] = Field(default_factory=dict)
 
 
 class Signal(BaseModel):
@@ -225,12 +226,9 @@ class Taxonomy(BaseModel):
     regions: dict[str, str] = Field(default_factory=dict)
 
     def version(self) -> str:
-        """Короткий отпечаток таксономии — меняется, когда меняются ключи."""
-        import hashlib
-        keys = "|".join(
-            ",".join(sorted(d)) for d in (self.markets, self.natures, self.business_models, self.spheres,
-                                          self.regions)
-        )
+        """A short fingerprint that changes whenever the keys change."""
+        sections = (self.markets, self.natures, self.business_models, self.spheres, self.regions)
+        keys = "|".join(",".join(sorted(d)) for d in sections)
         return hashlib.sha1(keys.encode()).hexdigest()[:8]
 
 
@@ -243,9 +241,9 @@ class Direction(BaseModel):
     reddit_search: list[str] = Field(default_factory=list)
     x_queries: list[str] = Field(default_factory=list)
     threads_queries: list[str] = Field(default_factory=list)
-    threads_accounts: list[str] = Field(default_factory=list)  # публичные профили Threads этой темы
-    search_scope: str = "subs"   # subs — искать внутри своих сабреддитов, site — по всему Reddit
-    region: str | None = None    # регион направления (ключ из taxonomy.regions) — подсказка классификатору
+    threads_accounts: list[str] = Field(default_factory=list)
+    search_scope: str = "subs"  # "subs" searches the direction's subreddits, "site" all of Reddit
+    region: str | None = None  # a taxonomy.regions key, passed to the classifier as a hint
     note: str = ""
 
 
@@ -283,7 +281,7 @@ class Config(BaseModel):
     wildcard_pool: list[str] = Field(default_factory=list)
     directions: dict[str, Direction] = Field(default_factory=dict)
 
-    # Заполняется загрузчиком, не из YAML
+    # Set by load_config, never read from YAML
     base_dir: Path = Field(default_factory=Path.cwd, exclude=True)
     secrets: Secrets = Field(default_factory=Secrets, exclude=True)
 
@@ -303,9 +301,8 @@ class Config(BaseModel):
 
 
 def load_dotenv(path: Path) -> None:
-    """Простой разбор .env: KEY=VALUE. Внутри файла побеждает последняя непустая строка
-    (можно дописать ключ в конец, не трогая пустую заготовку выше); переменные, уже
-    заданные в окружении, не перезаписываются."""
+    """Minimal KEY=VALUE parser. Within the file the last non-empty value wins, so a key can be
+    appended below an empty placeholder; variables already set in the environment are kept."""
     if not path.exists():
         return
     values: dict[str, str] = {}

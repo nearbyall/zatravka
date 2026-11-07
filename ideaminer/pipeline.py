@@ -18,7 +18,7 @@ from typing import Any
 from .config import Config, load_config
 from .context import Ctx, make_ctx
 from .core.models import Scope
-from .http import redact
+from .net.http import redact
 from .llm import BudgetExceeded, LLMError
 from .planner import Plan, make_plan
 from .sources.threads import ensure_token as ensure_threads_token

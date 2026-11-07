@@ -1,10 +1,8 @@
-"""Честный headless-рендер страниц: для площадок, которые отдают содержимое только
-после выполнения JavaScript.
+"""Honest headless rendering for sites that build their content with JavaScript.
 
-Никакой маскировки: стандартный User-Agent HeadlessChrome, без входа в аккаунты,
-без cookies (чистый временный профиль на каждую страницу), без прокси. Если сайт
-требует вход или блокирует headless-браузер — вызывающий код должен остановиться,
-а не искать обход.
+No disguise: the stock HeadlessChrome User-Agent, no logins, no cookies (a fresh
+temporary profile per page), no proxies. When a site asks for a login or blocks
+headless browsers, callers must stop rather than look for a way around.
 """
 from __future__ import annotations
 
@@ -27,7 +25,7 @@ class BrowserError(RuntimeError):
 
 
 def find_browser(explicit: str | None = None) -> str | None:
-    """Путь к Chromium: явный из конфига, $IDEAMINER_CHROMIUM, PATH или кэш Playwright."""
+    """Chromium from the config, $IDEAMINER_CHROMIUM, PATH or the Playwright cache."""
     for path in (explicit, os.environ.get("IDEAMINER_CHROMIUM")):
         if path and Path(path).exists():
             return path
@@ -55,22 +53,13 @@ class HeadlessBrowser:
         return bool(self.path)
 
     def render(self, url: str) -> str:
-        """HTML страницы после выполнения скриптов (виртуальное время budget_ms)."""
+        """The page DOM after scripts ran for budget_ms of virtual time."""
         if not self.path:
             raise BrowserError("Chromium не найден: установите chromium или задайте путь в конфиге")
         with tempfile.TemporaryDirectory(prefix="ideaminer-chrome-") as profile:
-            args = [
-                self.path, "--headless", "--disable-gpu", "--disable-extensions", "--mute-audio",
-                "--disable-background-networking", "--no-first-run", "--no-default-browser-check",
-                "--blink-settings=imagesEnabled=false", f"--user-data-dir={profile}",
-                # Зависшую страницу (виртуальное время стоит при висящих запросах) прерывает
-                # таймаут процесса ниже. Флаг --timeout не годится: с ним DOM приходит пустым
-                f"--virtual-time-budget={self.budget_ms}", "--dump-dom", url,
-            ]
-            if self.no_sandbox:
-                args.insert(1, "--no-sandbox")
             try:
-                done = subprocess.run(args, capture_output=True, timeout=self.timeout_s, check=False)
+                done = subprocess.run(self._args(url, profile), capture_output=True, timeout=self.timeout_s,
+                                      check=False)
             except subprocess.TimeoutExpired as e:
                 raise BrowserError(f"рендер {url} не уложился в {self.timeout_s:.0f} с") from e
         html = done.stdout.decode("utf-8", errors="replace")
@@ -79,3 +68,16 @@ class HeadlessBrowser:
             hint = " (нет песочницы: включите no_sandbox или запускайте в Docker)" if "sandbox" in err.lower() else ""
             raise BrowserError(f"браузер вернул пустую страницу, код {done.returncode}{hint}")
         return html
+
+    def _args(self, url: str, profile: str) -> list[str]:
+        # A hung page (virtual time stalls on pending requests) is cut off by the process
+        # timeout: Chromium's own --timeout flag makes it dump an empty DOM.
+        args = [
+            self.path or "", "--headless", "--disable-gpu", "--disable-extensions", "--mute-audio",
+            "--disable-background-networking", "--no-first-run", "--no-default-browser-check",
+            "--blink-settings=imagesEnabled=false", f"--user-data-dir={profile}",
+            f"--virtual-time-budget={self.budget_ms}", "--dump-dom", url,
+        ]
+        if self.no_sandbox:
+            args.insert(1, "--no-sandbox")
+        return args

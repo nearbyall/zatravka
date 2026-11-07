@@ -7,7 +7,7 @@ from typing import Any
 
 from .config import Config
 from .core.models import Scope
-from .http import PoliteHttp
+from .net.http import PoliteHttp
 from .llm import LLM
 from .prompts import render
 from .sources import Source, build_sources
