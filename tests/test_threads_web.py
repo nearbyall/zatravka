@@ -3,7 +3,7 @@ import random
 
 import pytest
 
-from ideaminer.accounts import add_account, normalize_username, pick_accounts, record_fetch
+from ideaminer.storage.accounts import add_account, normalize_username, pick_accounts, record_account_fetch
 from ideaminer.config import Direction
 from ideaminer.core.models import FeedSpec
 from ideaminer.sources.base import SourceUnavailable
@@ -121,7 +121,7 @@ def test_accounts_registry(ctx):
     assert normalize_username("не имя!") is None
     add_account(ctx.db, "threads", "alice", "d")
     for _ in range(3):
-        record_fetch(ctx.db, "threads", "alice", 0)
+        record_account_fetch(ctx.db, "threads", "alice", 0)
     assert pick_accounts(ctx.db, "threads", "d", 5, random.Random()) == []  # трижды пусто — выключен
     add_account(ctx.db, "threads", "@alice", "d", origin="manual")  # ручное добавление включает обратно
     assert pick_accounts(ctx.db, "threads", "d", 5, random.Random()) == ["alice"]
@@ -130,7 +130,7 @@ def test_accounts_registry(ctx):
 def test_discover_accounts_validates(web_cfg, ctx):
     import json as _json
     from conftest import FakeProvider
-    from ideaminer.planner import sync_directions
+    from ideaminer.storage.directions import sync_directions
     from ideaminer.stages.discover import discover_accounts
     sync_directions(web_cfg, ctx.db)
     pages = {"real_seller": page([[post(1, "real_seller", "Озон опять поменял правила возвратов")]]),
@@ -199,9 +199,9 @@ def test_parse_post_page():
 
 
 def test_enrich_takes_replies_and_adopts_related_authors(web_cfg, ctx):
-    from ideaminer.db import loads
+    from ideaminer.storage.db import loads
     from ideaminer.core.models import RawPost
-    from ideaminer.stages.collect import insert_posts
+    from ideaminer.storage.posts import insert_posts
     from ideaminer.stages.enrich import run_enrich
     web_cfg.sources.threads.mode = "web"
     web_cfg.sources.threads.max_accounts_per_direction = 2

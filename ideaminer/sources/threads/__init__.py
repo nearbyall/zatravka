@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import random
 
-from ...accounts import adopt_accounts, pick_accounts, record_fetch
+from ...storage.accounts import adopt_accounts, pick_accounts, record_account_fetch
 from ...core.selection import sample
 from ...core.models import Comment, FeedSpec, RawPost
 from ..base import Source, SourceUnavailable
@@ -77,7 +77,7 @@ class ThreadsSource(Source):
             raise SourceUnavailable(f"нет способа читать Threads «{feed.kind}» сейчас")
         posts = backend.fetch(feed)
         if feed.kind == "profile" and self.db:
-            record_fetch(self.db, "threads", feed.target, len(posts))
+            record_account_fetch(self.db, "threads", feed.target, len(posts))
         return posts
 
     def comments(self, post: dict) -> list[Comment]:

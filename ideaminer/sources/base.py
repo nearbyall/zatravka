@@ -8,7 +8,7 @@ from ..core.models import Comment, FeedSpec, RawPost
 
 if TYPE_CHECKING:
     from ..config import Config, Direction
-    from ..db import DB
+    from ..storage.db import DB
     from ..http import PoliteHttp
 
 

@@ -11,7 +11,6 @@ import yaml
 
 from .config import Config, load_config
 from .context import Ctx, make_ctx
-from .core.dates import utcnow
 
 
 def parse_overrides(pairs: list[str] | None) -> dict[str, Any]:
@@ -48,7 +47,7 @@ def _ctx(args: argparse.Namespace) -> tuple[Config, Ctx]:
 
 # ── команды ─────────────────────────────────────────────────────────────
 def cmd_init(args: argparse.Namespace) -> None:
-    from .planner import sync_directions
+    from .storage.directions import sync_directions
     cfg, ctx = _ctx(args)
     sync_directions(cfg, ctx.db)
     for d in ("inbox_dir", "exports_dir", "digests_dir"):
@@ -101,7 +100,8 @@ def cmd_doctor(args: argparse.Namespace, ctx: Ctx | None = None) -> None:
             print(f"  ✓ threads  токен рабочий, аккаунт @{me.get('username')}")
         except Exception as e:  # noqa: BLE001
             print(f"  ✗ threads  токен не принят: {e}")
-    print(f"Бюджет: сегодня потрачено ${ctx.llm.spent_today():.4f} из ${cfg.budget.daily_usd:.2f}")
+    from .storage.usage import spent_today
+    print(f"Бюджет: сегодня потрачено ${spent_today(ctx.db):.4f} из ${cfg.budget.daily_usd:.2f}")
 
 
 def cmd_run(args: argparse.Namespace) -> None:
@@ -130,46 +130,48 @@ def cmd_collect(args: argparse.Namespace) -> None:
 
 
 def cmd_explore(args: argparse.Namespace) -> None:
-    from .planner import sync_directions
     from .stages.explore import run_explore
+    from .storage.directions import sync_directions
+    from .storage.runs import finish_run, start_run
     cfg, ctx = _ctx(args)
     sync_directions(cfg, ctx.db)
-    run_id = ctx.db.start_run("explore")
-    ctx.set_run(run_id)
+    ctx.set_run(start_run(ctx.db, "explore"))
     created = run_explore(ctx)
-    ctx.db.finish_run(run_id, "ok", None, ctx.stats)
+    finish_run(ctx.db, ctx.run_id, "ok", None, ctx.stats)
     print("Новые направления:", ", ".join(created) or "нет")
 
 
 def cmd_reclassify(args: argparse.Namespace) -> None:
     from .llm import BudgetExceeded
-    from .stages.classify import reset_classification, run_classify
-    from .stages.dedup import refresh_mentions
+    from .stages.classify import run_classify
+    from .storage.ideas import count_outdated, count_unclassified, forget_taxonomy, refresh_mentions
+    from .storage.runs import finish_run, start_run
+    from .storage.usage import spent_in_run
     _, ctx = _ctx(args)
-    n = reset_classification(ctx, only_outdated=not args.all)
+    version = ctx.cfg.taxonomy.version()
+    n = forget_taxonomy(ctx.db) if args.all else count_outdated(ctx.db, version)
     print(f"К переразметке: {n}")
-    run_id = ctx.db.start_run("reclassify")
+    run_id = start_run(ctx.db, "reclassify")
     ctx.set_run(run_id)
     try:
-        while ctx.db.scalar("SELECT COUNT(*) FROM ideas WHERE classified_at IS NULL OR taxonomy_version IS NOT ?",
-                            (ctx.cfg.taxonomy.version(),), 0):
+        while count_unclassified(ctx.db, version):
             before = ctx.stats.get("classify", {}).get("ideas", 0)
             run_classify(ctx)
             if ctx.stats.get("classify", {}).get("ideas", 0) == before:
                 break
     except BudgetExceeded as e:
         print(f"Остановлено: {e}")
-    refresh_mentions(ctx)
-    ctx.db.finish_run(run_id, "ok", None, ctx.stats)
-    print_stats({"stats": ctx.stats, "cost_usd": ctx.db.spent_in_run(run_id)})
+    refresh_mentions(ctx.db, ctx.cfg.scoring.mention_bonus)
+    finish_run(ctx.db, run_id, "ok", None, ctx.stats)
+    print_stats({"stats": ctx.stats, "cost_usd": spent_in_run(ctx.db, run_id)})
 
 
 def cmd_rescore(args: argparse.Namespace) -> None:
-    from .stages.classify import rescore_all
-    from .stages.dedup import refresh_mentions
+    from .storage.ideas import refresh_mentions, rescore_all
     _, ctx = _ctx(args)
-    n = rescore_all(ctx)
-    refresh_mentions(ctx)
+    scoring = ctx.cfg.scoring
+    n = rescore_all(ctx.db, scoring.weights, scoring.mention_bonus)
+    refresh_mentions(ctx.db, scoring.mention_bonus)
     print(f"Пересчитано идей: {n}")
 
 
@@ -189,7 +191,7 @@ def _filters(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def cmd_ideas(args: argparse.Namespace) -> None:
-    from .export import query_ideas
+    from .storage.idea_queries import query_ideas
     _, ctx = _ctx(args)
     rows, total = query_ideas(ctx.db, limit=args.limit, **_filters(args))
     print(f"Идей: {total} (показано {len(rows)})\n")
@@ -206,7 +208,8 @@ def cmd_ideas(args: argparse.Namespace) -> None:
 
 def cmd_export(args: argparse.Namespace) -> None:
     from datetime import datetime
-    from .export import export_rows, query_ideas, to_csv, to_json, to_markdown, to_xlsx
+    from .export import export_rows, to_csv, to_json, to_markdown, to_xlsx
+    from .storage.idea_queries import query_ideas
     from .core.taxonomy import resolve_taxonomy
     cfg, ctx = _ctx(args)
     rows, _ = query_ideas(ctx.db, limit=args.limit, **_filters(args))
@@ -222,7 +225,8 @@ def cmd_export(args: argparse.Namespace) -> None:
 
 def cmd_import(args: argparse.Namespace) -> None:
     from .core.models import FeedSpec
-    from .stages.collect import insert_posts, run_prefilter
+    from .stages.collect import run_prefilter
+    from .storage.posts import insert_posts
     _, ctx = _ctx(args)
     src = ctx.sources["inbox"]
     for f in args.files:
@@ -235,37 +239,32 @@ def cmd_import(args: argparse.Namespace) -> None:
 
 
 def cmd_stats(args: argparse.Namespace) -> None:
-    from .planner import direction_stats
+    from .storage.directions import direction_stats
+    from .storage.ideas import count_ideas, idea_breakdown, region_breakdown
+    from .storage.posts import post_counts_by
+    from .storage.usage import llm_totals, spent_today
     _, ctx = _ctx(args)
     db = ctx.db
-    print("Посты по статусам:")
-    for r in db.query("SELECT status, COUNT(*) n FROM posts GROUP BY status ORDER BY n DESC"):
-        print(f"  {r['status']:10} {r['n']}")
-    print("Посты по платформам:")
-    for r in db.query("SELECT platform, COUNT(*) n FROM posts GROUP BY platform ORDER BY n DESC"):
-        print(f"  {r['platform']:10} {r['n']}")
-    n_ideas = db.scalar("SELECT COUNT(*) FROM ideas", (), 0)
-    n_cl = db.scalar("SELECT COUNT(*) FROM ideas WHERE cluster_id=id", (), 0)
-    print(f"Идей: {n_ideas}, уникальных (кластеров): {n_cl}")
-    for col in ("market", "nature", "sphere", "insight_type", "origin_region"):
-        rows = db.query(f"SELECT {col} AS k, COUNT(*) n FROM ideas WHERE cluster_id=id GROUP BY {col} ORDER BY n DESC")
-        print(f"  {col}: " + ", ".join(f"{r['k']}={r['n']}" for r in rows))
-    rows = db.query("SELECT j.value AS k, COUNT(*) n FROM ideas i, json_each(COALESCE(i.regions_json,'[]')) j"
-                    " WHERE i.cluster_id=i.id GROUP BY j.value ORDER BY n DESC")
-    print("  regions: " + ", ".join(f"{r['k']}={r['n']}" for r in rows))
+    for title, column in (("Посты по статусам:", "status"), ("Посты по платформам:", "platform")):
+        print(title)
+        for key, n in post_counts_by(db, column).items():
+            print(f"  {key:10} {n}")
+    print(f"Идей: {count_ideas(db)}, уникальных (кластеров): {count_ideas(db, clusters_only=True)}")
+    for column in ("market", "nature", "sphere", "insight_type", "origin_region"):
+        print(f"  {column}: " + ", ".join(f"{r['k']}={r['n']}" for r in idea_breakdown(db, column)))
+    print("  regions: " + ", ".join(f"{r['k']}={r['n']}" for r in region_breakdown(db)))
     print("Направления (пост → триаж → хорошие идеи):")
     for k, s in sorted(direction_stats(db, ctx.cfg).items(), key=lambda kv: -kv[1].get("yield", 0)):
         print(f"  {k:24} {int(s['posts']):5} → {int(s['triaged']):4} → {int(s.get('good', 0)):3}  yield={s['yield']}")
-    total = db.scalar("SELECT SUM(cost_usd) FROM llm_calls", (), 0.0)
-    calls = db.scalar("SELECT COUNT(*) FROM llm_calls", (), 0)
-    print(f"ИИ: вызовов {calls}, всего ${total:.4f}, сегодня ${ctx.llm.spent_today():.4f}")
+    calls, total = llm_totals(db)
+    print(f"ИИ: вызовов {calls}, всего ${total:.4f}, сегодня ${spent_today(db):.4f}")
 
 
 def cmd_unlock(args: argparse.Namespace) -> None:
-    from .pipeline import release_lock
+    from .storage.runs import abort_running, release_lock
     _, ctx = _ctx(args)
-    release_lock(ctx)
-    ctx.db.execute("UPDATE runs SET status='aborted', finished_at=? WHERE status='running'", (utcnow(),))
+    release_lock(ctx.db)
+    abort_running(ctx.db)
     print("Блокировка снята, зависшие прогоны помечены как aborted")
 
 
@@ -289,8 +288,8 @@ def cmd_threads_token(args: argparse.Namespace) -> None:
 
 
 def cmd_accounts(args: argparse.Namespace) -> None:
-    from .accounts import add_account, list_accounts, normalize_username
-    from .planner import sync_directions
+    from .storage.accounts import add_account, list_accounts, normalize_username, remove_account
+    from .storage.directions import sync_directions
     cfg, ctx = _ctx(args)
     sync_directions(cfg, ctx.db)
     act = args.action
@@ -311,8 +310,8 @@ def cmd_accounts(args: argparse.Namespace) -> None:
     elif act == "remove":
         for raw in args.names:
             name = normalize_username(raw)
-            n = ctx.db.execute("DELETE FROM accounts WHERE platform='threads' AND username=?", (name,)).rowcount
-            print(f"  {'удалён' if n else 'не найден'} @{name}")
+            removed = bool(name) and remove_account(ctx.db, "threads", name)
+            print(f"  {'удалён' if removed else 'не найден'} @{name}")
     elif act == "check":
         from .stages.discover import check_account
         for raw in args.names:

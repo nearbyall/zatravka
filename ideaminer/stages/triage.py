@@ -1,18 +1,21 @@
-"""Триаж: дешёвая ИИ-оценка пачек постов — есть ли в посте материал для идеи."""
+"""Triage: a cheap LLM pass over batches of posts, scoring whether a post can yield an idea."""
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from ..db import dumps
-from ..llm.schemas import TriageOut
 from ..core.selection import chunks, select_diverse
 from ..core.text import truncate
+from ..llm.schemas import TriageOut
+from ..storage.db import dumps
+from ..storage.posts import random_candidates, save_triage, top_candidates
 from . import parallel
 
 if TYPE_CHECKING:
     from ..context import Ctx
 
-COLUMNS = "id, platform, community, title, body, score, num_comments, created_at, lang, direction"
+PLATFORM_SHARE = 0.5
+POOL_FACTOR = 4
+NOTE_LENGTH = 300
 
 
 def format_post(r: dict[str, Any], max_chars: int) -> str:
@@ -34,23 +37,13 @@ def format_post(r: dict[str, Any], max_chars: int) -> str:
 
 
 def select_posts(ctx: "Ctx", limit: int) -> list[dict[str, Any]]:
-    cfg = ctx.cfg.triage
-    n_rand = int(limit * cfg.random_share)
-    scope, params = ctx.scope.sql()
-    pool = ctx.db.query(
-        f"SELECT {COLUMNS} FROM posts WHERE status='candidate'{scope}"
-        " ORDER BY prefilter_score DESC, created_at DESC LIMIT ?", (*params, (limit - n_rand) * 4))
-    # Ни одна площадка не забирает больше половины очереди: свежие посты X или Threads
-    # не должны тонуть в накопленном хвосте Reddit
-    top = select_diverse(pool, limit - n_rand, 0.5, key="platform")
-    seen = [r["id"] for r in top]
-    # Случайная доля — посты без сигнальных фраз: неочевидные идеи часто там
-    rand = ctx.db.query(
-        f"SELECT {COLUMNS} FROM posts WHERE status='candidate'{scope}"
-        f" AND id NOT IN ({','.join('?' * len(seen)) or 'NULL'}) ORDER BY RANDOM() LIMIT ?",
-        (*params, *seen, n_rand),
-    ) if n_rand else []
-    return top + rand
+    n_random = int(limit * ctx.cfg.triage.random_share)
+    pool = top_candidates(ctx.db, ctx.scope, (limit - n_random) * POOL_FACTOR)
+    # No platform takes more than half the batch, so fresh X or Threads posts
+    # do not drown in the Reddit backlog.
+    top = select_diverse(pool, limit - n_random, PLATFORM_SHARE, key="platform")
+    # The random share ignores signal phrases: non-obvious ideas often hide in plain posts.
+    return top + random_candidates(ctx.db, ctx.scope, n_random, [r["id"] for r in top])
 
 
 def run_triage(ctx: "Ctx", limit: int | None = None) -> None:
@@ -62,22 +55,20 @@ def run_triage(ctx: "Ctx", limit: int | None = None) -> None:
 
     def work(batch: list[dict[str, Any]]) -> TriageOut:
         user = "\n\n".join(format_post(r, cfg.max_body_chars) for r in batch)
-        return ctx.llm.json("triage", system, user, TriageOut,
-                            max_tokens=120 + 60 * len(batch), temperature=0.2)
+        return ctx.llm.json("triage", system, user, TriageOut, max_tokens=120 + 60 * len(batch), temperature=0.2)
 
     for batch, out, err in parallel(ctx, "triage", chunks(posts, cfg.batch_size), work):
         if err or out is None:
             continue
         by_id = {it.id: it for it in out.items}
-        updates = []
+        results = []
         for r in batch:
-            it = by_id.get(r["id"])
-            if not it:
+            item = by_id.get(r["id"])
+            if not item:
                 ctx.stat("triage", "missed")
                 continue
-            status = "promising" if it.score >= cfg.threshold else "skipped"
+            status = "promising" if item.score >= cfg.threshold else "skipped"
             ctx.stat("triage", status)
-            updates.append((it.score, dumps(it.signals), it.note[:300], status, r["id"]))
-        ctx.db.executemany(
-            "UPDATE posts SET triage_score=?, triage_signals=?, triage_note=?, status=? WHERE id=?", updates)
+            results.append((item.score, dumps(item.signals), item.note[:NOTE_LENGTH], status, r["id"]))
+        save_triage(ctx.db, results)
     ctx.log.info("[triage] %s", ctx.stats.get("triage"))

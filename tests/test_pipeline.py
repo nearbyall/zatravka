@@ -6,17 +6,19 @@ import pytest
 from conftest import FIXTURES
 from fastapi.testclient import TestClient
 
-from ideaminer.db import loads
+from ideaminer.storage.db import loads
+from ideaminer.storage.idea_queries import query_ideas
+from ideaminer.storage.ideas import rescore_all
+from ideaminer.storage.runs import acquire_lock, release_lock
 import io
 
 from openpyxl import load_workbook
 
-from ideaminer.export import export_rows, query_ideas, to_csv, to_json, to_markdown, to_xlsx
+from ideaminer.export import export_rows, to_csv, to_json, to_markdown, to_xlsx
 from ideaminer.core.taxonomy import resolve_taxonomy
-from ideaminer.pipeline import acquire_lock, release_lock, run_once
+from ideaminer.pipeline import run_once
 from ideaminer.planner import make_plan, pick_directions
 from ideaminer.sources.reddit import RedditSource, parse_rss_comments, parse_rss_posts
-from ideaminer.stages.classify import rescore_all
 from ideaminer.stages.digest import run_digest
 from ideaminer.web.app import create_app, plural
 
@@ -118,7 +120,7 @@ def test_full_pipeline(ctx, fake_reddit):
     assert "Напоминалка полива" in text and "Дом, ремонт, интерьер" in text
 
     ctx.cfg.scoring.weights = {"demand": 1.0}
-    rescore_all(ctx)
+    rescore_all(ctx.db, ctx.cfg.scoring.weights, ctx.cfg.scoring.mention_bonus)
     assert db.one("SELECT base_score FROM ideas WHERE id=?", (remind["id"],))["base_score"] == 7.0
 
 
@@ -130,11 +132,11 @@ def test_budget_stops_run_gracefully(ctx, fake_reddit):
 
 
 def test_run_lock(ctx):
-    assert acquire_lock(ctx, "a")
-    assert not acquire_lock(ctx, "b")
+    assert acquire_lock(ctx.db, "a")
+    assert not acquire_lock(ctx.db, "b")
     assert run_once(ctx, collect=False)["status"] == "busy"
-    release_lock(ctx)
-    assert acquire_lock(ctx, "c")
+    release_lock(ctx.db)
+    assert acquire_lock(ctx.db, "c")
 
 
 def test_planner(ctx):
@@ -235,7 +237,7 @@ def test_boost_regions_raises_odds(ctx):
 
 def test_scoped_run_processes_only_its_posts(ctx, fake_reddit):
     from ideaminer.core.models import RawPost
-    from ideaminer.stages.collect import insert_posts
+    from ideaminer.storage.posts import insert_posts
     # В очереди — хвост Reddit с сильными сигналами; прогон по X не должен его трогать
     backlog = [RawPost(platform="reddit", ext_id=f"t3_old{i}", url=f"https://reddit.com/{i}", author="a",
                        title="Is there an app for this? I would pay", body="I hate doing this manually " * 5,

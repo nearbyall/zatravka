@@ -9,7 +9,7 @@ import pytest
 
 from ideaminer.config import load_config
 from ideaminer.context import make_ctx
-from ideaminer.llm.client import Usage
+from ideaminer.llm import Usage
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -106,4 +106,3 @@ def ctx(cfg):
     c.llm.providers = [c.fake]
     yield c
     c.close()
-    c.db.close()

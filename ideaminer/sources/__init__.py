@@ -11,7 +11,7 @@ from .x import XSource
 
 if TYPE_CHECKING:
     from ..config import Config
-    from ..db import DB
+    from ..storage.db import DB
     from ..http import PoliteHttp
 
 ALL = (RedditSource, XSource, ThreadsSource, RssSource, InboxSource)

@@ -57,3 +57,18 @@ class RawPost:
     def content_hash(self) -> str:
         norm = _NON_WORD.sub(" ", self.text.lower()).strip()[:_HASHED_CHARS]
         return hashlib.sha1(norm.encode()).hexdigest()
+
+
+@dataclass(frozen=True)
+class Scope:
+    """Which posts the LLM stages handle. Empty means the whole queue; a run limited by
+    --sources or --directions handles only its own posts, not the backlog of others."""
+    sources: tuple[str, ...] = ()
+    directions: tuple[str, ...] = ()
+
+    def __bool__(self) -> bool:
+        return bool(self.sources or self.directions)
+
+    def describe(self) -> str:
+        parts = (("источники", self.sources), ("направления", self.directions))
+        return "; ".join(f"{label} {', '.join(values)}" for label, values in parts if values)

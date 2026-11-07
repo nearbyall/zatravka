@@ -6,44 +6,17 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .config import Config
-from .db import DB
+from .core.models import Scope
 from .http import PoliteHttp
 from .llm import LLM
 from .prompts import render
 from .sources import Source, build_sources
-
-
-@dataclass(frozen=True)
-class Scope:
-    """Какие посты разбирают стадии ИИ. Пустая — вся очередь. Прогон с --sources или
-    --directions обрабатывает только свои посты (и оставшиеся от прошлых таких же
-    прогонов), а не накопленный хвост остальных площадок и направлений."""
-    sources: tuple[str, ...] = ()
-    directions: tuple[str, ...] = ()
-
-    def __bool__(self) -> bool:
-        return bool(self.sources or self.directions)
-
-    def sql(self) -> tuple[str, list[str]]:
-        """Условие для WHERE по таблице posts (« AND …» или пусто) и его параметры."""
-        parts, params = [], []
-        if self.sources:
-            # Источник поста — начало ключа его ленты: «x:search:…», «threads:profile:…»
-            parts.append(f"substr(feed, 1, instr(feed, ':') - 1) IN ({','.join('?' * len(self.sources))})")
-            params += self.sources
-        if self.directions:
-            parts.append(f"direction IN ({','.join('?' * len(self.directions))})")
-            params += self.directions
-        return "".join(f" AND {p}" for p in parts), params
-
-    def describe(self) -> str:
-        return "; ".join(f"{k} {', '.join(v)}" for k, v in
-                         (("источники", self.sources), ("направления", self.directions)) if v)
+from .storage.db import DB
 
 
 @dataclass
 class Ctx:
-    """Всё, что нужно стадиям конвейера."""
+    """Everything the pipeline stages need."""
     cfg: Config
     db: DB
     http: PoliteHttp
@@ -69,6 +42,7 @@ class Ctx:
 
     def close(self) -> None:
         self.http.close()
+        self.db.close()
 
 
 def make_ctx(cfg: Config, db: DB | None = None, seed: int | None = None) -> Ctx:

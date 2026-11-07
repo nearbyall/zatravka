@@ -1,4 +1,4 @@
-"""Стадии конвейера и общие помощники для параллельных ИИ-вызовов."""
+"""Pipeline stages and a helper that runs LLM calls in parallel."""
 from __future__ import annotations
 
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
@@ -11,47 +11,46 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 R = TypeVar("R")
+_DONE = object()
 
 
 def parallel(ctx: "Ctx", stage: str, items: Iterable[T],
              fn: Callable[[T], R]) -> Iterator[tuple[T, R | None, Exception | None]]:
-    """Гоняет fn по items в пуле потоков, не больше llm.concurrency одновременно.
-    После BudgetExceeded новые задачи не запускаются: начатые догорают и отдаются,
-    а затем исключение пробрасывается — конвейер должен знать, что бюджет кончился."""
-    it = iter(items)
-    stop = False
+    """Runs fn over items with at most llm.concurrency calls in flight, yielding
+    (item, result, error). After BudgetExceeded no new calls start: those in flight
+    finish and are yielded, then the exception is re-raised so the pipeline stops."""
+    pending = iter(items)
+    workers = max(1, ctx.cfg.llm.concurrency)
     budget_error: BudgetExceeded | None = None
-    with ThreadPoolExecutor(max_workers=max(1, ctx.cfg.llm.concurrency)) as ex:
+    with ThreadPoolExecutor(max_workers=workers) as pool:
         inflight: dict[Future, T] = {}
 
         def submit_next() -> None:
-            if stop:
+            if budget_error:
                 return
-            try:
-                item = next(it)
-            except StopIteration:
-                return
-            inflight[ex.submit(fn, item)] = item
+            item = next(pending, _DONE)
+            if item is not _DONE:
+                inflight[pool.submit(fn, item)] = item
 
-        for _ in range(max(1, ctx.cfg.llm.concurrency)):
+        for _ in range(workers):
             submit_next()
         while inflight:
             done, _ = wait(list(inflight), return_when=FIRST_COMPLETED)
-            for f in done:
-                item = inflight.pop(f)
+            for future in done:
+                item = inflight.pop(future)
                 try:
-                    yield item, f.result(), None
+                    yield item, future.result(), None
                 except BudgetExceeded as e:
-                    if not stop:
+                    if not budget_error:
                         ctx.log.warning("[%s] %s — стадия остановлена", stage, e)
                         ctx.stat(stage, "budget_stop")
-                    stop = True
                     budget_error = e
                     yield item, None, e
-                except Exception as e:  # noqa: BLE001 — ошибку отдаём вызывающему
+                except Exception as e:  # noqa: BLE001 - the caller decides what a failed item means
                     ctx.log.warning("[%s] ошибка: %s", stage, e)
                     ctx.stat(stage, "errors")
                     yield item, None, e
                 submit_next()
     if budget_error:
         raise budget_error
+

@@ -15,12 +15,19 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from ..config import Config, load_config
-from ..db import DB, loads
-from ..core.dates import utcnow
 from ..core.labels import ACCOUNT_ORIGIN, INSIGHT, NATURE, PLATFORM, POST_STATUS, SCORE_LABELS, STATUS, region_short
-from ..export import (decode, evidence_for, export_rows, facet_counts, query_ideas, region_counts, to_csv,
-                      to_json, to_markdown, to_xlsx)
-from ..planner import direction_stats, sync_directions
+from ..export import export_rows, to_csv, to_json, to_markdown, to_xlsx
+from ..storage.accounts import accounts_by_direction
+from ..storage.db import DB, loads
+from ..storage.directions import (directions_overview, get_direction, set_direction_enabled,
+                                  sync_directions)
+from ..storage.feeds import recent_feeds
+from ..storage.idea_queries import (cluster_members, evidence_for, facet_counts, get_idea, lead_evidence,
+                                    query_ideas, region_counts, similar_ideas)
+from ..storage.ideas import count_ideas, set_idea_note, set_idea_status
+from ..storage.posts import browse_posts, count_posts, directions_in_use, post_counts_by
+from ..storage.runs import last_finished_run, recent_runs
+from ..storage.usage import daily_llm_usage, spent_today
 from ..core.taxonomy import resolve_taxonomy
 
 HERE = Path(__file__).parent
@@ -72,7 +79,6 @@ class Runner:
                 self.result = {"status": "error", "error": str(e)}
             finally:
                 ctx.close()
-                ctx.db.close()
 
         self.thread = threading.Thread(target=work, daemon=True, name="ideaminer-run")
         self.thread.start()
@@ -159,11 +165,8 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     tpl.env.filters["sphere"] = lambda k: tax["spheres"].get(k or "", k or "—")
     tpl.env.filters["model"] = lambda k: tax["business_models"].get(k or "", k or "—")
 
-    def spent_today() -> float:
-        return db.spent_since(datetime.now(timezone.utc).strftime("%Y-%m-%dT00:00:00"))
-
     def render(request: Request, name: str, **ctx: Any) -> HTMLResponse:
-        ctx.update(request=request, spent_today=spent_today(), budget=cfg.budget.daily_usd,
+        ctx.update(request=request, spent_today=spent_today(db), budget=cfg.budget.daily_usd,
                    runner=runner.state(), nav=name)
         return tpl.TemplateResponse(request, f"{name}.html", ctx)
 
@@ -214,16 +217,12 @@ def create_app(cfg: Config | None = None) -> FastAPI:
         natures = {r["nature"]: r["n"] for r in facet_counts(db, ("nature",), **{k: v for k, v in f.items() if k not in ("nature", "sort")})}
         insights = {r["insight_type"]: r["n"] for r in facet_counts(db, ("insight_type",), **{k: v for k, v in f.items() if k not in ("insight", "sort")})}
         regions = {r["region"]: r["n"] for r in region_counts(db, **{k: v for k, v in f.items() if k not in ("region", "sort")})}
-        evidence = {}
-        for r in rows:
-            ev = db.one("SELECT p.platform, p.community, p.url FROM ideas m JOIN idea_evidence e ON e.idea_id=m.id"
-                        " JOIN posts p ON p.id=e.post_id WHERE m.cluster_id=? ORDER BY p.score DESC LIMIT 1", (r["id"],))
-            evidence[r["id"]] = ev
+        evidence = {r["id"]: lead_evidence(db, r["id"]) for r in rows}
         totals = {
-            "posts": db.scalar("SELECT COUNT(*) FROM posts", (), 0),
-            "ideas": db.scalar("SELECT COUNT(*) FROM ideas WHERE cluster_id=id", (), 0),
-            "queue": db.scalar("SELECT COUNT(*) FROM posts WHERE status IN ('candidate','promising')", (), 0),
-            "last_run": db.one("SELECT * FROM runs WHERE status != 'running' ORDER BY id DESC LIMIT 1"),
+            "posts": count_posts(db),
+            "ideas": count_ideas(db, clusters_only=True),
+            "queue": count_posts(db, statuses=("candidate", "promising")),
+            "last_run": last_finished_run(db),
         }
         return render(request, "ideas", rows=rows, total=total, page=page, pages=(total + PAGE - 1) // PAGE,
                       f=f, grid=grid, spheres=spheres, columns=columns, axis=axis, param=param, peak=peak,
@@ -231,22 +230,16 @@ def create_app(cfg: Config | None = None) -> FastAPI:
 
     @app.get("/idea/{idea_id}", response_class=HTMLResponse)
     def idea_page(request: Request, idea_id: int) -> HTMLResponse:
-        idea = db.one("SELECT * FROM ideas WHERE id=?", (idea_id,))
+        idea = get_idea(db, idea_id)
         if not idea:
             raise HTTPException(404, "Идея не найдена")
-        decode(idea)
         root = idea["cluster_id"] or idea["id"]
-        canonical = decode(db.one("SELECT * FROM ideas WHERE id=?", (root,)) or idea) if root != idea["id"] else None
-        variants = [decode(v) for v in db.query(
-            "SELECT * FROM ideas WHERE cluster_id=? AND id != ? ORDER BY score DESC", (root, idea["id"]))]
+        canonical = (get_idea(db, root) or idea) if root != idea["id"] else None
+        variants = cluster_members(db, root, idea["id"])
         if canonical:
             variants = [canonical] + [v for v in variants if v["id"] != canonical["id"]]
         evidence = evidence_for(db, root)
-        similar = []
-        if idea.get("sphere"):
-            similar = [decode(r) for r in db.query(
-                "SELECT * FROM ideas WHERE cluster_id=id AND sphere=? AND id != ? AND status != 'rejected'"
-                " ORDER BY score DESC LIMIT 6", (idea["sphere"], root))]
+        similar = similar_ideas(db, idea["sphere"], root) if idea.get("sphere") else []
         return render(request, "idea", idea=idea, variants=variants, evidence=evidence, similar=similar,
                       canonical=canonical)
 
@@ -255,16 +248,14 @@ def create_app(cfg: Config | None = None) -> FastAPI:
         status = payload.get("status")
         if status not in STATUS:
             raise HTTPException(400, f"Статус должен быть одним из: {', '.join(STATUS)}")
-        cur = db.execute("UPDATE ideas SET status=?, updated_at=? WHERE id=?", (status, utcnow(), idea_id))
-        if not cur.rowcount:
+        if not set_idea_status(db, idea_id, status):
             raise HTTPException(404, "Идея не найдена")
         return {"ok": True, "status": status, "label": STATUS[status]}
 
     @app.post("/api/ideas/{idea_id}/note")
     def set_note(idea_id: int, payload: dict = Body(...)) -> dict[str, Any]:
         note = str(payload.get("note") or "")[:5000]
-        cur = db.execute("UPDATE ideas SET note=?, updated_at=? WHERE id=?", (note, utcnow(), idea_id))
-        if not cur.rowcount:
+        if not set_idea_note(db, idea_id, note):
             raise HTTPException(404, "Идея не найдена")
         return {"ok": True}
 
@@ -294,22 +285,11 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     @app.get("/posts", response_class=HTMLResponse)
     def posts_page(request: Request, status: str | None = None, platform: str | None = None,
                    direction: str | None = None, q: str | None = None, page: int = 1) -> HTMLResponse:
-        where, params = ["1=1"], []
-        for col, val in (("status", status), ("platform", platform), ("direction", direction)):
-            if val:
-                where.append(f"{col}=?")
-                params.append(val)
-        if q:
-            where.append("(title LIKE ? OR body LIKE ?)")
-            params += [f"%{q}%"] * 2
-        w = " AND ".join(where)
-        total = db.scalar(f"SELECT COUNT(*) FROM posts WHERE {w}", params, 0)
         page = max(1, page)
-        rows = db.query(
-            f"SELECT p.*, (SELECT COUNT(*) FROM idea_evidence e WHERE e.post_id=p.id) AS n_ideas FROM posts p"
-            f" WHERE {w} ORDER BY p.id DESC LIMIT ? OFFSET ?", [*params, PAGE, (page - 1) * PAGE])
-        counts = {r["status"]: r["n"] for r in db.query("SELECT status, COUNT(*) n FROM posts GROUP BY status")}
-        directions = [r["direction"] for r in db.query("SELECT DISTINCT direction FROM posts ORDER BY direction")]
+        rows, total = browse_posts(db, status=status, platform=platform, direction=direction, q=q, limit=PAGE,
+                                   offset=(page - 1) * PAGE)
+        counts = post_counts_by(db, "status")
+        directions = directions_in_use(db)
         return render(request, "posts", rows=rows, total=total, page=page, pages=(total + PAGE - 1) // PAGE,
                       f={"status": status, "platform": platform, "direction": direction, "q": q},
                       counts=counts, directions=directions)
@@ -317,41 +297,24 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     # ── направления ─────────────────────────────────────────────────────
     @app.get("/directions", response_class=HTMLResponse)
     def directions_page(request: Request) -> HTMLResponse:
-        stats = direction_stats(db, cfg)
-        rows = db.query("SELECT * FROM directions ORDER BY origin='system', enabled DESC, key")
-        for r in rows:
-            r["spec"] = loads(r["spec_json"], {})
-            r["stats"] = stats.get(r["key"], {})
-        rows.sort(key=lambda r: (r["origin"] == "system", not r["enabled"], -r["stats"].get("yield", 0)))
-        accounts: dict[str, list[dict[str, Any]]] = {}
-        for a in db.query("SELECT * FROM accounts WHERE platform='threads' ORDER BY username"):
-            accounts.setdefault(a["direction"] or "wildcard", []).append(a)
-        return render(request, "directions", rows=rows, accounts=accounts)
+        return render(request, "directions", rows=directions_overview(db, cfg),
+                      accounts=accounts_by_direction(db, "threads"))
 
     @app.post("/api/directions/{key}/toggle")
     def toggle_direction(key: str) -> dict[str, Any]:
-        row = db.one("SELECT enabled, origin FROM directions WHERE key=?", (key,))
+        row = get_direction(db, key)
         if not row:
             raise HTTPException(404, "Направление не найдено")
         if row["origin"] == "system":
             raise HTTPException(400, "Системное направление не отключается")
-        enabled = 0 if row["enabled"] else 1
-        db.execute("UPDATE directions SET enabled=?, updated_at=? WHERE key=?", (enabled, utcnow(), key))
-        return {"ok": True, "enabled": bool(enabled)}
+        enabled = not row["enabled"]
+        set_direction_enabled(db, key, enabled)
+        return {"ok": True, "enabled": enabled}
 
     # ── прогоны ─────────────────────────────────────────────────────────
     @app.get("/runs", response_class=HTMLResponse)
     def runs_page(request: Request) -> HTMLResponse:
-        rows = db.query("SELECT * FROM runs ORDER BY id DESC LIMIT 100")
-        for r in rows:
-            r["stats"] = loads(r["stats_json"], {}) or {}
-            r["plan"] = loads(r["plan_json"], {}) or {}
-        days = db.query(
-            "SELECT substr(ts,1,10) AS day, COUNT(*) AS calls, SUM(prompt_tokens) AS pin,"
-            " SUM(completion_tokens) AS pout, ROUND(SUM(cost_usd), 4) AS cost, SUM(ok=0) AS failed"
-            " FROM llm_calls GROUP BY day ORDER BY day DESC LIMIT 14")
-        feeds = db.query("SELECT * FROM feed_state ORDER BY last_fetched_at DESC LIMIT 40")
-        return render(request, "runs", rows=rows, days=days, feeds=feeds)
+        return render(request, "runs", rows=recent_runs(db), days=daily_llm_usage(db), feeds=recent_feeds(db))
 
     @app.post("/api/run")
     def start_run(payload: dict = Body(default={})) -> JSONResponse:
@@ -365,6 +328,6 @@ def create_app(cfg: Config | None = None) -> FastAPI:
 
     @app.get("/healthz")
     def healthz() -> dict[str, Any]:
-        return {"ok": True, "ideas": db.scalar("SELECT COUNT(*) FROM ideas", (), 0)}
+        return {"ok": True, "ideas": count_ideas(db)}
 
     return app

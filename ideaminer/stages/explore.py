@@ -1,20 +1,20 @@
-"""ИИ-исследователь: раз в несколько прогонов предлагает новые направления
-поиска на основе того, что уже дало хорошие идеи, плюс случайная затравка
-для разнообразия. Слабые ИИ-направления со временем отключаются."""
+"""LLM explorer: every few runs it proposes new search directions based on what already
+produced good ideas, plus random seeds for variety. Weak LLM directions get disabled."""
 from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING
 
-from ..db import dumps
-from ..core.dates import utcnow
-from ..llm.schemas import ExploreOut
-from ..planner import direction_stats, load_directions
+from ..config import Direction, Explore
+from ..llm.schemas import ExploreDirection, ExploreOut
+from ..storage.directions import (add_direction, direction_stats, disable_directions, enabled_llm_directions,
+                                  load_directions)
+from ..storage.ideas import best_ideas, sphere_summary
 
 if TYPE_CHECKING:
     from ..context import Ctx
 
-# Случайные затравки: толкают ИИ в территории, о которых он сам бы не подумал
+# Random seeds push the LLM toward territory it would not think of on its own.
 SEEDS = [
     "пасечники", "ветеринары экзотических животных", "свадебные фотографы", "учителя химии",
     "дальнобойщики", "владельцы аквариумов", "органические фермеры", "архитекторы", "варгеймеры",
@@ -26,14 +26,21 @@ SEEDS = [
     "игроки в шахматы", "моделисты", "фуд-траки", "соревновательный танец", "охота и рыбалка",
     "самостоятельные родители", "люди с аллергией", "дайверы", "уличные художники", "мастера маникюра",
 ]
+SEEDS_PER_RUN = 3
+# Without Reddit OAuth every check waits about a minute for the rate limit.
+MAX_SUBREDDIT_CHECKS = 5
+MIN_LIVE_SUBREDDITS = 2
+QUERIES_PER_KIND = 3
+SUBREDDIT_NAME = re.compile(r"[A-Za-z0-9_]{2,21}")
 
 
 def slug(s: str) -> str:
     return re.sub(r"[^a-z0-9_]+", "_", (s or "").lower()).strip("_")[:40] or "direction"
 
 
-def overlapping(subs: list[str], dirs: dict, extra: dict[str, list[str]], share: float = 0.5) -> str | None:
-    """Ключ направления, с которым у предложения совпадает больше share сабреддитов."""
+def overlapping(subs: list[str], dirs: dict[str, Direction], extra: dict[str, list[str]],
+                share: float = 0.5) -> str | None:
+    """Key of a direction sharing more than `share` of the proposed subreddits."""
     mine = {s.lower() for s in subs}
     if not mine:
         return None
@@ -48,87 +55,84 @@ def should_explore(ctx: "Ctx") -> bool:
     cfg = ctx.cfg.explore
     if not cfg.enabled or not ctx.run_id:
         return False
-    last = ctx.db.kv_get("explore_last_run_id", 0) or 0
-    return ctx.run_id - last >= cfg.every_n_runs
+    return ctx.run_id - (ctx.db.kv_get("explore_last_run_id", 0) or 0) >= cfg.every_n_runs
 
 
 def run_explore(ctx: "Ctx") -> list[str]:
-    cfg, db = ctx.cfg, ctx.db
-    stats = direction_stats(db, cfg)
-    dirs = load_directions(db, enabled_only=False)
-    lines = []
-    for key, d in dirs.items():
-        s = stats.get(key, {})
-        lines.append(f"- {key} ({d.name}): сабреддиты {', '.join(d.subreddits[:8])}; постов {int(s.get('posts', 0))},"
-                     f" прошли триаж {int(s.get('triaged', 0))}, хороших идей {int(s.get('good', 0))}")
-    spheres = db.query(
-        "SELECT sphere, COUNT(*) AS n, ROUND(AVG(score), 2) AS avg FROM ideas"
-        " WHERE cluster_id=id AND sphere IS NOT NULL GROUP BY sphere ORDER BY avg DESC LIMIT 12")
-    top = db.query("SELECT title, sphere, score FROM ideas WHERE cluster_id=id AND score IS NOT NULL"
-                   " ORDER BY score DESC LIMIT 12")
-    seeds = ctx.rng.sample(SEEDS, 3)
-    sphere_lines = [f"- {r['sphere']}: идей {r['n']}, средний балл {r['avg']}" for r in spheres]
-    top_lines = [f"- [{r['sphere']}, {r['score']}] {r['title']}" for r in top]
-    user = "\n".join([
-        "Существующие направления:", *lines, "",
-        "Сферы по среднему баллу идей:", *(sphere_lines or ["- пока нет данных"]), "",
-        "Лучшие идеи:", *(top_lines or ["- пока нет"]), "",
-        f"Случайные затравки для неочевидных направлений (используй хотя бы одну): {', '.join(seeds)}",
-    ])
-    out = ctx.llm.json("explore", ctx.prompt("explore", count=cfg.explore.new_directions), user, ExploreOut,
+    cfg = ctx.cfg.explore
+    dirs = load_directions(ctx.db, enabled_only=False)
+    out = ctx.llm.json("explore", ctx.prompt("explore", count=cfg.new_directions), _brief(ctx, dirs), ExploreOut,
                        max_tokens=2500, temperature=0.9)
-    reddit = ctx.sources.get("reddit")
-    created: list[str] = []
-    created_specs: dict[str, list[str]] = {}
-    now = utcnow()
-    for d in out.directions[: cfg.explore.new_directions]:
-        key = slug(d.key)
+    created: dict[str, list[str]] = {}
+    for proposal in out.directions[: cfg.new_directions]:
+        key = slug(proposal.key)
         if key in dirs or key in created:
             key = f"{key}_{ctx.run_id}"
-        subs = [re.sub(r"^/?r/", "", s).strip("/ ") for s in d.subreddits]
-        subs = [s for s in subs if re.fullmatch(r"[A-Za-z0-9_]{2,21}", s)]
-        twin = overlapping(subs, dirs, created_specs)
+        subs = _valid_subreddits(proposal.subreddits)
+        twin = overlapping(subs, dirs, created)
         if twin:
-            # Тот же набор сообществ под новым названием ничего не добавит — только съест прогоны
             ctx.log.info("[explore] направление %s отброшено: сабреддиты почти как у %s", key, twin)
             ctx.stat("explore", "duplicates")
             continue
-        if reddit and reddit.status()[0]:
-            checked = []
-            for s in subs[:5]:  # без OAuth каждая проверка стоит ~минуту ожидания лимита
-                ok = reddit.subreddit_exists(s)
-                if ok is not False:
-                    checked.append(s)
-            subs = checked
-        if len(subs) < 2 and not (d.x_queries or d.threads_queries):
+        subs = _live_subreddits(ctx, subs)
+        if len(subs) < MIN_LIVE_SUBREDDITS and not (proposal.x_queries or proposal.threads_queries):
             ctx.log.info("[explore] направление %s отброшено: нет живых сабреддитов", key)
             continue
-        spec = {"subreddits": subs, "reddit_search": d.reddit_search[:3], "x_queries": d.x_queries[:3],
-                "threads_queries": d.threads_queries[:3], "search_scope": "subs"}
-        db.execute(
-            "INSERT INTO directions(key, name, origin, enabled, weight, spec_json, rationale, created_at, updated_at)"
-            " VALUES(?,?,?,?,?,?,?,?,?)",
-            (key, d.name or key, "llm", 1, 1.0, dumps(spec), d.rationale, now, now),
-        )
-        created.append(key)
-        created_specs[key] = subs
-        ctx.log.info("[explore] новое направление %s: %s", key, d.name)
-    db.kv_set("explore_last_run_id", ctx.run_id)
+        add_direction(ctx.db, key, proposal.name or key, _spec(proposal, subs), proposal.rationale)
+        created[key] = subs
+        ctx.log.info("[explore] новое направление %s: %s", key, proposal.name)
+    ctx.db.kv_set("explore_last_run_id", ctx.run_id)
     ctx.stat("explore", "created", len(created))
-    return created
+    return list(created)
+
+
+def _brief(ctx: "Ctx", dirs: dict[str, Direction]) -> str:
+    stats = direction_stats(ctx.db, ctx.cfg)
+    directions = []
+    for key, d in dirs.items():
+        s = stats.get(key, {})
+        directions.append(f"- {key} ({d.name}): сабреддиты {', '.join(d.subreddits[:8])};"
+                          f" постов {int(s.get('posts', 0))}, прошли триаж {int(s.get('triaged', 0))},"
+                          f" хороших идей {int(s.get('good', 0))}")
+    spheres = [f"- {r['sphere']}: идей {r['n']}, средний балл {r['avg']}" for r in sphere_summary(ctx.db)]
+    top = [f"- [{r['sphere']}, {r['score']}] {r['title']}" for r in best_ideas(ctx.db)]
+    seeds = ", ".join(ctx.rng.sample(SEEDS, SEEDS_PER_RUN))
+    return "\n".join([
+        "Существующие направления:", *directions, "",
+        "Сферы по среднему баллу идей:", *(spheres or ["- пока нет данных"]), "",
+        "Лучшие идеи:", *(top or ["- пока нет"]), "",
+        f"Случайные затравки для неочевидных направлений (используй хотя бы одну): {seeds}",
+    ])
+
+
+def _valid_subreddits(names: list[str]) -> list[str]:
+    cleaned = (re.sub(r"^/?r/", "", s).strip("/ ") for s in names)
+    return [s for s in cleaned if SUBREDDIT_NAME.fullmatch(s)]
+
+
+def _live_subreddits(ctx: "Ctx", subs: list[str]) -> list[str]:
+    reddit = ctx.sources.get("reddit")
+    if not reddit or not reddit.status()[0]:
+        return subs
+    return [s for s in subs[:MAX_SUBREDDIT_CHECKS] if reddit.subreddit_exists(s) is not False]
+
+
+def _spec(proposal: ExploreDirection, subs: list[str]) -> dict[str, object]:
+    return {"subreddits": subs, "reddit_search": proposal.reddit_search[:QUERIES_PER_KIND],
+            "x_queries": proposal.x_queries[:QUERIES_PER_KIND],
+            "threads_queries": proposal.threads_queries[:QUERIES_PER_KIND], "search_scope": "subs"}
 
 
 def prune_directions(ctx: "Ctx") -> list[str]:
-    cfg = ctx.cfg.explore
     stats = direction_stats(ctx.db, ctx.cfg)
-    pruned = []
-    for r in ctx.db.query("SELECT key FROM directions WHERE origin='llm' AND enabled=1"):
-        s = stats.get(r["key"], {})
-        triaged = s.get("triaged", 0)
-        if triaged >= cfg.prune_min_triaged and s.get("value", 0) / triaged < cfg.prune_min_yield:
-            ctx.db.execute("UPDATE directions SET enabled=0, updated_at=? WHERE key=?", (utcnow(), r["key"]))
-            pruned.append(r["key"])
-    if pruned:
-        ctx.log.info("[explore] отключены слабые направления: %s", ", ".join(pruned))
-        ctx.stat("explore", "pruned", len(pruned))
-    return pruned
+    weak = [key for key in enabled_llm_directions(ctx.db) if _is_weak(stats.get(key, {}), ctx.cfg.explore)]
+    if weak:
+        disable_directions(ctx.db, weak)
+        ctx.log.info("[explore] отключены слабые направления: %s", ", ".join(weak))
+        ctx.stat("explore", "pruned", len(weak))
+    return weak
+
+
+def _is_weak(stats: dict[str, float], cfg: Explore) -> bool:
+    triaged = stats.get("triaged", 0)
+    return triaged >= cfg.prune_min_triaged and stats.get("value", 0) / triaged < cfg.prune_min_yield
