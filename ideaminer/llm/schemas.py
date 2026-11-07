@@ -8,6 +8,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from ..core.scoring import SCORE_KEYS
+
 
 def _clamp(v: Any, lo: float, hi: float, default: float) -> float:
     try:
@@ -93,9 +95,6 @@ class ExtractOut(BaseModel):
 
 
 # ── classify ────────────────────────────────────────────────────────────
-SCORE_KEYS = ("demand", "monetization", "novelty", "feasibility", "whitespace", "urgency")
-
-
 class ClassItem(BaseModel):
     id: int
     market: str = ""

@@ -12,7 +12,7 @@ import io
 from openpyxl import load_workbook
 
 from ideaminer.export import export_rows, query_ideas, to_csv, to_json, to_markdown, to_xlsx
-from ideaminer.stages.classify import taxonomy
+from ideaminer.core.taxonomy import resolve_taxonomy
 from ideaminer.pipeline import acquire_lock, release_lock, run_once
 from ideaminer.planner import make_plan, pick_directions
 from ideaminer.sources.reddit import RedditSource, parse_rss_comments, parse_rss_posts
@@ -94,7 +94,7 @@ def test_full_pipeline(ctx, fake_reddit):
     all_rows, _ = query_ideas(db)
     all_items = export_rows(db, all_rows)
     all_items[0]["note"] = "=HYPERLINK(\"http://evil\")"  # текст из поста не должен стать формулой
-    wb = load_workbook(io.BytesIO(to_xlsx(all_items, taxonomy(ctx.cfg))))
+    wb = load_workbook(io.BytesIO(to_xlsx(all_items, resolve_taxonomy(ctx.cfg))))
     assert wb.sheetnames == ["Идеи", "Источники", "Сфера × рынок", "Сфера × регион"]
     ideas_ws = wb["Идеи"]
     header = [c.value for c in ideas_ws[1]]
@@ -234,7 +234,7 @@ def test_boost_regions_raises_odds(ctx):
 
 
 def test_scoped_run_processes_only_its_posts(ctx, fake_reddit):
-    from ideaminer.models import RawPost
+    from ideaminer.core.models import RawPost
     from ideaminer.stages.collect import insert_posts
     # В очереди — хвост Reddit с сильными сигналами; прогон по X не должен его трогать
     backlog = [RawPost(platform="reddit", ext_id=f"t3_old{i}", url=f"https://reddit.com/{i}", author="a",

@@ -1,7 +1,7 @@
-"""Лексическая похожесть текстов: TF-IDF по символьным триграммам слов.
+"""Lexical similarity: TF-IDF over character trigrams of words.
 
-Триграммы терпимы к словоформам русского языка («сервис/сервиса/сервисов»),
-а инвертированный индекс держит поиск быстрым на тысячах идей без numpy.
+Trigrams tolerate Russian inflection, and the inverted index keeps lookups fast
+over thousands of ideas without numpy.
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import re
 from collections import Counter, defaultdict
 
 _TOKEN = re.compile(r"[^\W_]+", re.U)
-STOP = {
+STOPWORDS = {
     "для", "и", "в", "на", "с", "по", "из", "от", "к", "о", "а", "или", "что", "как", "это", "без",
     "the", "a", "an", "for", "to", "of", "and", "in", "on", "with", "by", "or", "that", "is",
     "сервис", "приложение", "платформа", "инструмент", "app", "tool", "service", "platform",
@@ -19,10 +19,10 @@ STOP = {
 
 def grams(text: str, n: int = 3) -> Counter:
     out: Counter = Counter()
-    for w in _TOKEN.findall((text or "").lower()):
-        if w in STOP or len(w) < 2:
+    for word in _TOKEN.findall((text or "").lower()):
+        if word in STOPWORDS or len(word) < 2:
             continue
-        padded = f" {w} "
+        padded = f" {word} "
         if len(padded) <= n:
             out[padded] += 1
             continue
@@ -41,20 +41,19 @@ class SimIndex:
             self.observe(text)
 
     def observe(self, text: str) -> None:
-        """Учесть текст в статистике IDF (до индексации)."""
+        """Counts the text into IDF statistics; call before indexing."""
         self.n_docs += 1
         for g in grams(text):
             self.df[g] += 1
 
-    def _vec(self, text: str) -> dict[str, float]:
-        tf = grams(text)
+    def _vector(self, text: str) -> dict[str, float]:
         n = max(self.n_docs, 1)
-        v = {g: (1 + math.log(c)) * math.log((n + 1) / (self.df.get(g, 0) + 1) + 1) for g, c in tf.items()}
+        v = {g: (1 + math.log(c)) * math.log((n + 1) / (self.df.get(g, 0) + 1) + 1) for g, c in grams(text).items()}
         norm = math.sqrt(sum(x * x for x in v.values())) or 1.0
         return {g: x / norm for g, x in v.items()}
 
     def add(self, doc_id: int, text: str) -> None:
-        v = self._vec(text)
+        v = self._vector(text)
         self.docs[doc_id] = v
         for g, w in v.items():
             self.postings[g][doc_id] = w
@@ -64,9 +63,8 @@ class SimIndex:
             self.postings[g].pop(doc_id, None)
 
     def query(self, text: str, top: int = 5, exclude: int | None = None) -> list[tuple[int, float]]:
-        q = self._vec(text)
         scores: dict[int, float] = defaultdict(float)
-        for g, qw in q.items():
+        for g, qw in self._vector(text).items():
             for doc_id, w in self.postings.get(g, {}).items():
                 scores[doc_id] += qw * w
         if exclude is not None:
@@ -75,7 +73,7 @@ class SimIndex:
 
 
 def similarity(a: str, b: str) -> float:
-    idx = SimIndex([a, b])
-    idx.add(1, b)
-    res = idx.query(a, top=1)
-    return res[0][1] if res else 0.0
+    index = SimIndex([a, b])
+    index.add(1, b)
+    found = index.query(a, top=1)
+    return found[0][1] if found else 0.0

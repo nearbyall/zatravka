@@ -15,8 +15,9 @@ import logging
 import random
 
 from ...accounts import adopt_accounts, pick_accounts, record_fetch
-from ...models import Comment, FeedSpec, RawPost
-from ..base import Source, SourceUnavailable, sample
+from ...core.selection import sample
+from ...core.models import Comment, FeedSpec, RawPost
+from ..base import Source, SourceUnavailable
 from .api import ThreadsApiBackend, ensure_token, exchange_token, parse_threads, refresh_token, whoami
 from .web import ThreadsWebBackend, parse_post_page, parse_rendered
 

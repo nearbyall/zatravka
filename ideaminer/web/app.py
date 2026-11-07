@@ -15,12 +15,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from ..config import Config, load_config
-from ..db import DB, loads, utcnow
-from ..labels import ACCOUNT_ORIGIN, INSIGHT, NATURE, PLATFORM, POST_STATUS, SCORE_LABELS, STATUS, region_short
+from ..db import DB, loads
+from ..core.dates import utcnow
+from ..core.labels import ACCOUNT_ORIGIN, INSIGHT, NATURE, PLATFORM, POST_STATUS, SCORE_LABELS, STATUS, region_short
 from ..export import (decode, evidence_for, export_rows, facet_counts, query_ideas, region_counts, to_csv,
                       to_json, to_markdown, to_xlsx)
 from ..planner import direction_stats, sync_directions
-from ..stages.classify import taxonomy
+from ..core.taxonomy import resolve_taxonomy
 
 HERE = Path(__file__).parent
 PAGE = 40
@@ -141,7 +142,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     cfg = cfg or load_config()
     db = DB(cfg.db_path)
     sync_directions(cfg, db)
-    tax = taxonomy(cfg)
+    tax = resolve_taxonomy(cfg)
     app = FastAPI(title="ideaminer", docs_url="/api/docs", redoc_url=None)
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
     tpl = Jinja2Templates(directory=HERE / "templates")

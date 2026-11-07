@@ -1,40 +1,18 @@
 """Извлечение идей из перспективных постов, включая неочевидные (lateral)."""
 from __future__ import annotations
 
-import math
-import re
 from typing import TYPE_CHECKING, Any
 
-from ..db import loads, utcnow
+from ..db import loads
+from ..core.dates import utcnow
 from ..llm import BudgetExceeded
 from ..llm.schemas import ExtractOut
-from ..models import truncate
+from ..core.selection import select_diverse
+from ..core.text import truncate, verify_quote
 from . import parallel
 
 if TYPE_CHECKING:
     from ..context import Ctx
-
-_NORM = re.compile(r"[^\w]+", re.U)
-
-
-def _norm(s: str) -> str:
-    return _NORM.sub(" ", (s or "").lower()).strip()
-
-
-def verify_quote(quote: str, source: str) -> bool:
-    """Цитата есть в источнике дословно (с точностью до пунктуации и регистра)
-    или хотя бы 70% её пятисловных отрезков встречаются в тексте."""
-    q, s = _norm(quote), _norm(source)
-    if not q or len(q) < 8:
-        return False
-    if q in s:
-        return True
-    words = q.split()
-    if len(words) < 5:
-        return False
-    shingles = [" ".join(words[i:i + 5]) for i in range(len(words) - 4)]
-    return sum(1 for sh in shingles if sh in s) / len(shingles) >= 0.7
-
 
 def post_context(r: dict[str, Any], max_body: int, max_comments: int) -> str:
     meta = f"Платформа: {r['platform']}"
@@ -67,23 +45,6 @@ def post_context(r: dict[str, Any], max_body: int, max_comments: int) -> str:
 def source_text(r: dict[str, Any]) -> str:
     comments = loads(r.get("comments_json"), []) or []
     return "\n".join([r.get("title") or "", r.get("body") or ""] + [c.get("body", "") for c in comments])
-
-
-def select_diverse(rows: list[dict[str, Any]], limit: int, max_share: float,
-                   key: str = "direction") -> list[dict[str, Any]]:
-    """Лучшие посты, но не больше max_share лимита на одно значение key (направление,
-    площадку): иначе самая «болючая» тема съедает весь прогон. Остаток квоты, если
-    других значений не хватило, добирается лучшими из оставшихся."""
-    cap = max(1, math.ceil(limit * max_share)) if max_share < 1 else limit
-    picked, rest, per_dir = [], [], {}
-    for r in rows:
-        d = r.get(key) or "?"
-        if len(picked) < limit and per_dir.get(d, 0) < cap:
-            picked.append(r)
-            per_dir[d] = per_dir.get(d, 0) + 1
-        else:
-            rest.append(r)
-    return picked + rest[: limit - len(picked)]
 
 
 def run_extract(ctx: "Ctx", limit: int | None = None) -> None:

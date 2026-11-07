@@ -11,7 +11,8 @@ import random
 import re
 from typing import TYPE_CHECKING, Any
 
-from .db import DB, utcnow
+from .db import DB
+from .core.dates import utcnow
 
 if TYPE_CHECKING:
     from .config import Config

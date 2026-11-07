@@ -12,8 +12,11 @@ import time
 from urllib.parse import quote, urlencode
 
 from ..http import HttpError
-from ..models import Comment, FeedSpec, RawPost, html_to_text, parse_dt
-from .base import Source, sample, weighted_choice
+from ..core.dates import parse_dt
+from ..core.selection import sample, weighted_choice
+from ..core.models import Comment, FeedSpec, RawPost
+from ..core.text import html_to_text
+from .base import Source
 from .rss import parse_feed
 
 log = logging.getLogger(__name__)

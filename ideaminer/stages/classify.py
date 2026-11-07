@@ -4,67 +4,18 @@
 from __future__ import annotations
 
 import json
-import math
 from typing import TYPE_CHECKING, Any
 
-from ..db import dumps, loads, utcnow
-from ..llm.schemas import ClassifyOut, SCORE_KEYS
-from . import chunks, parallel
+from ..db import dumps, loads
+from ..core.dates import utcnow
+from ..core.scoring import base_score, final_score
+from ..core.selection import chunks
+from ..core.taxonomy import normalize_key, resolve_taxonomy
+from ..llm.schemas import ClassifyOut
+from . import parallel
 
 if TYPE_CHECKING:
-    from ..config import Config
     from ..context import Ctx
-
-DEFAULT_TAXONOMY = {
-    "markets": {"B2B": "Бизнесу", "B2C": "Потребителю", "B2B2C": "Через бизнес к потребителю",
-                "C2C": "Между людьми", "B2G": "Государству"},
-    "natures": {"digital": "Цифровой продукт", "physical": "Физический товар",
-                "hybrid": "Физическое + цифровое", "service": "Услуга"},
-    "business_models": {"saas": "SaaS", "subscription": "Подписка", "freemium": "Freemium",
-                        "marketplace": "Маркетплейс", "transactional": "Разовая продажа", "ads": "Реклама",
-                        "hardware": "Устройства", "consumables": "Расходники", "service": "Услуги",
-                        "licensing": "Лицензирование", "data_api": "Данные/API", "community": "Сообщество",
-                        "other": "Другое"},
-    "spheres": {"games": "Игры", "beauty": "Красота и косметика", "business_ops": "Бизнес-операции",
-                "health": "Здоровье", "education": "Образование", "finance": "Финансы",
-                "ecommerce": "E-commerce", "dev_tools": "Инструменты разработчика", "other": "Другое"},
-    "regions": {"global": "Глобально", "north_america": "Северная Америка", "latam": "Латинская Америка",
-                "eu": "ЕС и Европа", "cis": "СНГ", "east_europe": "Восточная Европа вне ЕС",
-                "mena": "Ближний Восток", "africa": "Африка", "south_asia": "Южная Азия",
-                "east_asia": "Восточная Азия", "oceania": "Океания"},
-}
-
-
-def taxonomy(cfg: "Config") -> dict[str, dict[str, str]]:
-    t = cfg.taxonomy
-    return {name: getattr(t, name) or DEFAULT_TAXONOMY[name] for name in DEFAULT_TAXONOMY}
-
-
-def normalize_key(value: str, options: dict[str, str], fallback: str | None = None) -> str | None:
-    v = (value or "").strip()
-    if not v:
-        return fallback
-    low = {k.lower(): k for k in options}
-    if v.lower() in low:
-        return low[v.lower()]
-    for k, label in options.items():
-        low_label = label.lower()
-        # Модель иногда отвечает подписью вместо ключа: «СНГ», «ЕС и остальная Европа», «Игры и гейминг»
-        if v.lower() in (low_label, low_label.split(" (")[0]) or v.lower() in low_label.split(","):
-            return k
-    return fallback
-
-
-def base_score(scores: dict[str, float], weights: dict[str, float]) -> float:
-    total_w = sum(weights.get(k, 0) for k in SCORE_KEYS) or 1.0
-    return round(sum(scores.get(k, 5) * weights.get(k, 0) for k in SCORE_KEYS) / total_w, 2)
-
-
-def final_score(base: float | None, mentions: int, bonus: float) -> float | None:
-    if base is None:
-        return None
-    return round(base + bonus * math.log2(max(1, mentions)), 2)
-
 
 def _block(d: dict[str, str]) -> str:
     return "\n".join(f"- {k}: {v}" for k, v in d.items())
@@ -84,7 +35,7 @@ def run_classify(ctx: "Ctx", limit: int = 500) -> None:
     """Размечает новые идеи и идеи, размеченные старой таксономией (они остаются видны
     со старыми метками, пока их не переразметят)."""
     cfg = ctx.cfg
-    tax = taxonomy(cfg)
+    tax = resolve_taxonomy(cfg)
     tv = cfg.taxonomy.version()
     rows = ctx.db.query(
         "SELECT id, title, one_liner, problem, solution, audience, insight_type, mentions FROM ideas"

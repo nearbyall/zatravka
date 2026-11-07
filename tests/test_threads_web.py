@@ -5,7 +5,7 @@ import pytest
 
 from ideaminer.accounts import add_account, normalize_username, pick_accounts, record_fetch
 from ideaminer.config import Direction
-from ideaminer.models import FeedSpec
+from ideaminer.core.models import FeedSpec
 from ideaminer.sources.base import SourceUnavailable
 from ideaminer.sources.threads import ThreadsApiBackend, ThreadsSource, ThreadsWebBackend, parse_rendered
 from ideaminer.sources.threads.web import ProfileUnavailable, is_login_page
@@ -200,7 +200,7 @@ def test_parse_post_page():
 
 def test_enrich_takes_replies_and_adopts_related_authors(web_cfg, ctx):
     from ideaminer.db import loads
-    from ideaminer.models import RawPost
+    from ideaminer.core.models import RawPost
     from ideaminer.stages.collect import insert_posts
     from ideaminer.stages.enrich import run_enrich
     web_cfg.sources.threads.mode = "web"

@@ -10,9 +10,10 @@ import json
 import sqlite3
 import threading
 from contextlib import contextmanager
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
+
+from .core.dates import utcnow
 
 SCHEMA = [
     # v1
@@ -178,10 +179,6 @@ SCHEMA = [
     );
     """,
 ]
-
-
-def utcnow() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
 def dumps(v: Any) -> str:

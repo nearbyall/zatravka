@@ -159,7 +159,7 @@ def to_xlsx(items: list[dict[str, Any]], tax: dict[str, dict[str, str]]) -> byte
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
 
-    from .labels import INSIGHT, NATURE, PLATFORM, SCORE_LABELS, STATUS, region_short
+    from .core.labels import INSIGHT, NATURE, PLATFORM, SCORE_LABELS, STATUS, region_short
 
     head_font = Font(bold=True, color="FFFFFF")
     head_fill = PatternFill("solid", fgColor="2747C7")

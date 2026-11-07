@@ -7,7 +7,8 @@
 from __future__ import annotations
 
 from ...http import redact
-from ...models import FeedSpec, RawPost, parse_dt
+from ...core.dates import parse_dt
+from ...core.models import FeedSpec, RawPost
 
 BASE = "https://graph.threads.net/v1.0"
 FIELDS = "id,text,media_type,permalink,timestamp,username,has_replies,is_quote_post,is_reply"

@@ -10,8 +10,10 @@ import random
 import hashlib
 from datetime import datetime, timedelta, timezone
 
-from ..models import FeedSpec, RawPost, parse_dt
-from .base import Source, SourceLimitReached, sample
+from ..core.dates import parse_dt
+from ..core.selection import sample
+from ..core.models import FeedSpec, RawPost
+from .base import Source, SourceLimitReached
 
 SEARCH_URL = "https://api.x.com/2/tweets/search/recent"
 

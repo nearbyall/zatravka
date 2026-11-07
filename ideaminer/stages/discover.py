@@ -10,10 +10,10 @@ from typing import TYPE_CHECKING
 
 from ..accounts import add_account, normalize_username
 from ..llm.schemas import AccountsOut
-from ..models import FeedSpec
+from ..core.models import FeedSpec
 from ..planner import load_directions
 from ..sources.base import SourceLimitReached
-from .classify import taxonomy
+from ..core.taxonomy import resolve_taxonomy
 
 if TYPE_CHECKING:
     from ..context import Ctx
@@ -46,7 +46,7 @@ def discover_accounts(ctx: "Ctx", direction_key: str, count: int = 8) -> list[st
     d = directions.get(direction_key)
     if not d:
         raise ValueError(f"нет направления {direction_key}")
-    tax = taxonomy(ctx.cfg)
+    tax = resolve_taxonomy(ctx.cfg)
     about = "; ".join(filter(None, [
         ", ".join(f"r/{s}" for s in d.subreddits[:8]),
         " | ".join(d.threads_queries[:3] or d.reddit_search[:3]),

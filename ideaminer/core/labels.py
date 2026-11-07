@@ -1,4 +1,4 @@
-"""Русские подписи для интерфейса, дайджеста и выгрузок."""
+"""Russian labels for the UI, digests and exports."""
 
 NATURE = {"digital": "цифровой", "physical": "физический", "hybrid": "гибрид", "service": "услуга"}
 INSIGHT = {"explicit": "явная", "implicit": "неявная", "lateral": "неочевидная"}
@@ -17,10 +17,9 @@ REGION_SHORT = {"global": "глобально", "north_america": "Сев. Аме
 
 
 def region_short(key: str | None, regions: dict[str, str] | None = None) -> str:
-    """Короткая подпись региона: из словаря выше или начало полной подписи до скобки."""
+    """Short region label: a known abbreviation or the full label up to its parenthesis."""
     if not key:
         return "—"
     if key in REGION_SHORT:
         return REGION_SHORT[key]
-    label = (regions or {}).get(key, key)
-    return label.split(" (")[0]
+    return (regions or {}).get(key, key).split(" (")[0]

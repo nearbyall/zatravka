@@ -6,7 +6,9 @@ import random
 from defusedxml import ElementTree as ET
 from typing import Any
 
-from ..models import FeedSpec, RawPost, html_to_text, parse_dt
+from ..core.dates import parse_dt
+from ..core.models import FeedSpec, RawPost
+from ..core.text import html_to_text
 from .base import Source
 
 ATOM = "{http://www.w3.org/2005/Atom}"

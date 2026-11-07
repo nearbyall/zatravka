@@ -13,11 +13,6 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 
-def chunks(items: list[T], size: int) -> list[list[T]]:
-    size = max(1, size)
-    return [items[i:i + size] for i in range(0, len(items), size)]
-
-
 def parallel(ctx: "Ctx", stage: str, items: Iterable[T],
              fn: Callable[[T], R]) -> Iterator[tuple[T, R | None, Exception | None]]:
     """Гоняет fn по items в пуле потоков, не больше llm.concurrency одновременно.

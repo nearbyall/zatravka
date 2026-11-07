@@ -11,7 +11,7 @@ import yaml
 
 from .config import Config, load_config
 from .context import Ctx, make_ctx
-from .db import utcnow
+from .core.dates import utcnow
 
 
 def parse_overrides(pairs: list[str] | None) -> dict[str, Any]:
@@ -207,21 +207,21 @@ def cmd_ideas(args: argparse.Namespace) -> None:
 def cmd_export(args: argparse.Namespace) -> None:
     from datetime import datetime
     from .export import export_rows, query_ideas, to_csv, to_json, to_markdown, to_xlsx
-    from .stages.classify import taxonomy
+    from .core.taxonomy import resolve_taxonomy
     cfg, ctx = _ctx(args)
     rows, _ = query_ideas(ctx.db, limit=args.limit, **_filters(args))
     items = export_rows(ctx.db, rows)
     out = Path(args.out) if args.out else cfg.path(cfg.storage.exports_dir) / f"ideas-{datetime.now():%Y%m%d-%H%M}.{args.format}"
     out.parent.mkdir(parents=True, exist_ok=True)
     if args.format == "xlsx":
-        out.write_bytes(to_xlsx(items, taxonomy(cfg)))
+        out.write_bytes(to_xlsx(items, resolve_taxonomy(cfg)))
     else:
         out.write_text({"csv": to_csv, "json": to_json, "md": to_markdown}[args.format](items), encoding="utf-8")
     print(f"Выгружено {len(items)} идей → {out}")
 
 
 def cmd_import(args: argparse.Namespace) -> None:
-    from .models import FeedSpec
+    from .core.models import FeedSpec
     from .stages.collect import insert_posts, run_prefilter
     _, ctx = _ctx(args)
     src = ctx.sources["inbox"]

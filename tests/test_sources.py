@@ -4,7 +4,7 @@ import random
 from conftest import FIXTURES
 
 from ideaminer.config import Direction
-from ideaminer.models import FeedSpec
+from ideaminer.core.models import FeedSpec
 from ideaminer.sources.inbox import InboxSource
 from ideaminer.sources.reddit import RedditSource, parse_api_comments, parse_api_listing, parse_rss_comments, parse_rss_posts
 from ideaminer.sources.rss import parse_feed

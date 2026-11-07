@@ -4,7 +4,7 @@ import random
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from ..models import Comment, FeedSpec, RawPost
+from ..core.models import Comment, FeedSpec, RawPost
 
 if TYPE_CHECKING:
     from ..config import Config, Direction
@@ -52,18 +52,3 @@ class Source(ABC):
 
     def after_ingest(self, feed: FeedSpec) -> None:
         """Хук после сохранения постов ленты в БД."""
-
-
-def weighted_choice(weights: dict[str, float], rng: random.Random) -> str:
-    items = [(k, w) for k, w in weights.items() if w > 0]
-    total = sum(w for _, w in items)
-    r = rng.random() * total
-    for k, w in items:
-        r -= w
-        if r <= 0:
-            return k
-    return items[-1][0]
-
-
-def sample(items: list, k: int, rng: random.Random) -> list:
-    return rng.sample(items, min(k, len(items))) if items and k > 0 else []

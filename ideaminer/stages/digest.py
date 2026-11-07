@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Any
 import httpx
 
 from ..db import loads
-from ..labels import INSIGHT, NATURE, region_short
-from .classify import taxonomy
+from ..core.labels import INSIGHT, NATURE, region_short
+from ..core.taxonomy import resolve_taxonomy
 
 if TYPE_CHECKING:
     from ..context import Ctx
@@ -28,7 +28,7 @@ def top_ideas(ctx: "Ctx", days: float, min_score: float, limit: int) -> list[dic
 
 
 def render_digest(ctx: "Ctx", ideas: list[dict[str, Any]], days: float) -> str:
-    tax = taxonomy(ctx.cfg)
+    tax = resolve_taxonomy(ctx.cfg)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     n_new = ctx.db.scalar("SELECT COUNT(*) FROM ideas WHERE created_at >= ?", (since,), 0)

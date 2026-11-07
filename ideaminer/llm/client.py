@@ -19,7 +19,8 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from ..config import Config
-from ..db import DB, utcnow
+from ..db import DB
+from ..core.dates import utcnow
 
 log = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)

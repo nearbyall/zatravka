@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
 from ideaminer.config import Prefilter, Signal
-from ideaminer.prefilter import detect_lang, evaluate
-from ideaminer.stages.extract import select_diverse, verify_quote
-from ideaminer.textsim import SimIndex, similarity
+from ideaminer.core.prefilter import detect_lang, evaluate
+from ideaminer.core.selection import select_diverse
+from ideaminer.core.text import verify_quote
+from ideaminer.core.similarity import SimIndex, similarity
 
 
 def test_detect_lang():

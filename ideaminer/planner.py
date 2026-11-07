@@ -13,8 +13,9 @@ from typing import TYPE_CHECKING, Any
 
 from .accounts import sync_config_accounts
 from .config import Config, Direction
-from .db import DB, dumps, loads, utcnow
-from .models import FeedSpec
+from .db import DB, dumps, loads
+from .core.dates import utcnow
+from .core.models import FeedSpec
 
 if TYPE_CHECKING:
     from .context import Ctx

@@ -8,12 +8,12 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
-from ..db import utcnow
+from ..core.dates import utcnow
 from ..llm import BudgetExceeded, LLMError
 from ..llm.schemas import MergeOut
-from ..textsim import SimIndex
-from . import chunks
-from .classify import final_score
+from ..core.scoring import final_score
+from ..core.selection import chunks
+from ..core.similarity import SimIndex
 
 if TYPE_CHECKING:
     from ..context import Ctx

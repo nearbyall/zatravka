@@ -6,7 +6,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from ..db import dumps, utcnow
+from ..db import dumps
+from ..core.dates import utcnow
 from ..llm.schemas import ExploreOut
 from ..planner import direction_stats, load_directions
 

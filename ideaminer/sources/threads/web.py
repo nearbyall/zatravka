@@ -23,7 +23,8 @@ from dataclasses import dataclass, field
 from typing import Any, Iterator
 
 from ...browser import BrowserError, HeadlessBrowser
-from ...models import Comment, FeedSpec, RawPost, parse_dt
+from ...core.dates import parse_dt
+from ...core.models import Comment, FeedSpec, RawPost
 from ..base import SourceUnavailable
 
 

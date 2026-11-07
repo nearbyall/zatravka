@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Any
 
 from ..db import dumps
 from ..llm.schemas import TriageOut
-from ..models import truncate
-from . import chunks, parallel
-from .extract import select_diverse
+from ..core.selection import chunks, select_diverse
+from ..core.text import truncate
+from . import parallel
 
 if TYPE_CHECKING:
     from ..context import Ctx
