@@ -4,7 +4,7 @@ from __future__ import annotations
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import TYPE_CHECKING, Callable, Iterable, Iterator, TypeVar
 
-from ..llm import BudgetExceeded
+from ...llm import BudgetExceeded
 
 if TYPE_CHECKING:
     from ..context import Ctx

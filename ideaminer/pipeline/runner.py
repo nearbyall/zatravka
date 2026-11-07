@@ -1,4 +1,4 @@
-"""One pipeline run, and the daemon that repeats it on a schedule.
+"""One pipeline run.
 
 collect → prefilter → triage → enrich → extract → classify → dedup → explore.
 Every stage drains its own queue in the database, so work left over because of
@@ -7,31 +7,25 @@ the budget or a failure is picked up by the next run.
 from __future__ import annotations
 
 import logging
-import random
-import signal
-import threading
 import time
 import traceback
-from datetime import datetime, timezone
 from typing import Any
 
-from .config import Config, load_config
-from .context import Ctx, make_ctx
-from .core.models import Scope
-from .net.http import redact
-from .llm import BudgetExceeded, LLMError
+from ..core.models import Scope
+from ..llm import BudgetExceeded, LLMError
+from ..net.http import redact
+from ..sources.threads import ensure_token as ensure_threads_token
+from ..storage.runs import acquire_lock, finish_run, release_lock, start_run
+from ..storage.usage import spent_in_run
+from .context import Ctx
 from .planner import Plan, make_plan
-from .sources.threads import ensure_token as ensure_threads_token
 from .stages.classify import run_classify
 from .stages.collect import run_collect, run_prefilter
 from .stages.dedup import run_dedup
-from .stages.digest import run_digest
 from .stages.enrich import run_enrich
 from .stages.explore import prune_directions, run_explore, should_explore
 from .stages.extract import run_extract
 from .stages.triage import run_triage
-from .storage.runs import acquire_lock, finish_run, release_lock, start_run
-from .storage.usage import spent_in_run
 
 log = logging.getLogger("ideaminer")
 
@@ -43,8 +37,6 @@ LLM_STAGES = (
     ("dedup", run_dedup),
 )
 ERROR_TAIL_CHARS = 4000
-MIN_SLEEP_S = 60
-BUSY_RETRY_S = 600
 
 
 def run_once(ctx: Ctx, trigger: str = "manual", *, only_sources: list[str] | None = None,
@@ -122,56 +114,3 @@ def _process(ctx: Ctx, explore: bool | None) -> str:
             log.warning("[explore] %s", e)
     prune_directions(ctx)
     return "ok"
-
-
-def digest_due(ctx: Ctx) -> bool:
-    now = datetime.now(timezone.utc)
-    return now.hour >= ctx.cfg.schedule.digest_hour_utc and ctx.db.kv_get("digest_last_date") != f"{now:%Y-%m-%d}"
-
-
-def daemon(cfg: Config, config_path: str | None = None) -> None:
-    """Runs, writes the digest when due and sleeps, until SIGTERM or SIGINT."""
-    stop = threading.Event()
-
-    def on_signal(signum: int, _frame: Any) -> None:
-        log.info("получен сигнал %s, завершаюсь после текущего шага", signum)
-        stop.set()
-
-    signal.signal(signal.SIGTERM, on_signal)
-    signal.signal(signal.SIGINT, on_signal)
-    rng = random.Random()
-    while not stop.is_set():
-        cfg = _reload(cfg, config_path)
-        busy = _daemon_cycle(cfg)
-        sleep_s = BUSY_RETRY_S if busy else _interval(cfg, rng)
-        log.info("следующий прогон через %.0f мин", sleep_s / 60)
-        stop.wait(sleep_s)
-
-
-def _reload(cfg: Config, config_path: str | None) -> Config:
-    """Edits to config.yaml apply without a restart; a broken file keeps the previous config."""
-    try:
-        return load_config(config_path)
-    except Exception as e:  # noqa: BLE001
-        log.error("config.yaml не читается, беру прежний: %s", e)
-        return cfg
-
-
-def _daemon_cycle(cfg: Config) -> bool:
-    """One scheduled run; True when another run held the lock."""
-    ctx = make_ctx(cfg)
-    busy = False
-    try:
-        busy = run_once(ctx, trigger="daemon")["status"] == "busy"
-        if digest_due(ctx):
-            log.info("дайджест: %s", run_digest(ctx))
-    except Exception as e:  # noqa: BLE001 - the daemon must outlive a failed cycle
-        log.error("цикл демона: %s", e)
-    finally:
-        ctx.close()
-    return busy
-
-
-def _interval(cfg: Config, rng: random.Random) -> float:
-    s = cfg.schedule
-    return max(MIN_SLEEP_S, s.run_every_minutes * 60 + rng.uniform(-1, 1) * s.jitter_minutes * 60)

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..core.models import Comment
-from ..storage.db import Row
-from ..storage.posts import promising_posts, save_comments
+from ...core.models import Comment
+from ...storage.db import Row
+from ...storage.posts import promising_posts, save_comments
 
 if TYPE_CHECKING:
     from ..context import Ctx

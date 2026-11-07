@@ -10,7 +10,7 @@ from typing import Any
 import yaml
 
 from .config import Config, load_config
-from .context import Ctx, make_ctx
+from .pipeline.context import Ctx, make_ctx
 
 
 def parse_overrides(pairs: list[str] | None) -> dict[str, Any]:
@@ -105,32 +105,32 @@ def cmd_doctor(args: argparse.Namespace, ctx: Ctx | None = None) -> None:
 
 
 def cmd_run(args: argparse.Namespace) -> None:
-    from .pipeline import run_once
+    from .pipeline.runner import run_once
     _, ctx = _ctx(args)
     res = run_once(ctx, trigger="manual", only_sources=_csv(args.sources), only_directions=_csv(args.directions),
                    use_llm=not args.no_llm, explore=True if args.explore else None)
     print_stats(res)
     if args.digest:
-        from .stages.digest import run_digest
+        from .pipeline.stages.digest import run_digest
         print(f"Дайджест: {run_digest(ctx, days=1)}")
 
 
 def cmd_process(args: argparse.Namespace) -> None:
-    from .pipeline import run_once
+    from .pipeline.runner import run_once
     _, ctx = _ctx(args)
     print_stats(run_once(ctx, trigger="process", collect=False, only_sources=_csv(args.sources),
                          only_directions=_csv(args.directions)))
 
 
 def cmd_collect(args: argparse.Namespace) -> None:
-    from .pipeline import run_once
+    from .pipeline.runner import run_once
     _, ctx = _ctx(args)
     print_stats(run_once(ctx, trigger="collect", only_sources=_csv(args.sources),
                          only_directions=_csv(args.directions), use_llm=False))
 
 
 def cmd_explore(args: argparse.Namespace) -> None:
-    from .stages.explore import run_explore
+    from .pipeline.stages.explore import run_explore
     from .storage.directions import sync_directions
     from .storage.runs import finish_run, start_run
     cfg, ctx = _ctx(args)
@@ -143,7 +143,7 @@ def cmd_explore(args: argparse.Namespace) -> None:
 
 def cmd_reclassify(args: argparse.Namespace) -> None:
     from .llm import BudgetExceeded
-    from .stages.classify import run_classify
+    from .pipeline.stages.classify import run_classify
     from .storage.ideas import count_outdated, count_unclassified, forget_taxonomy, refresh_mentions
     from .storage.runs import finish_run, start_run
     from .storage.usage import spent_in_run
@@ -176,7 +176,7 @@ def cmd_rescore(args: argparse.Namespace) -> None:
 
 
 def cmd_digest(args: argparse.Namespace) -> None:
-    from .stages.digest import run_digest
+    from .pipeline.stages.digest import run_digest
     _, ctx = _ctx(args)
     path = run_digest(ctx, days=args.days, send=True if args.send else None)
     print(path.read_text(encoding="utf-8"))
@@ -225,7 +225,7 @@ def cmd_export(args: argparse.Namespace) -> None:
 
 def cmd_import(args: argparse.Namespace) -> None:
     from .core.models import FeedSpec
-    from .stages.collect import run_prefilter
+    from .pipeline.stages.collect import run_prefilter
     from .storage.posts import insert_posts
     _, ctx = _ctx(args)
     src = ctx.sources["inbox"]
@@ -313,14 +313,14 @@ def cmd_accounts(args: argparse.Namespace) -> None:
             removed = bool(name) and remove_account(ctx.db, "threads", name)
             print(f"  {'удалён' if removed else 'не найден'} @{name}")
     elif act == "check":
-        from .stages.discover import check_account
+        from .pipeline.stages.discover import check_account
         for raw in args.names:
             name = normalize_username(raw) or raw
             ok, why = check_account(ctx, name, args.direction)
             print(f"  {'✓' if ok else '✗'} @{name}: {why}")
     elif act == "discover":
         from .llm import BudgetExceeded
-        from .stages.discover import discover_accounts
+        from .pipeline.stages.discover import discover_accounts
         keys = _csv(args.direction) or ["region_cis"]
         for key in keys:
             try:
@@ -332,7 +332,7 @@ def cmd_accounts(args: argparse.Namespace) -> None:
 
 
 def cmd_daemon(args: argparse.Namespace) -> None:
-    from .pipeline import daemon
+    from .pipeline.daemon import daemon
     cfg = load_config(args.config)
     daemon(cfg, args.config)
 

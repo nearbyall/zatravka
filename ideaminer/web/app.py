@@ -69,8 +69,8 @@ class Runner:
         self.started = time.time()
 
         def work() -> None:
-            from ..context import make_ctx
-            from ..pipeline import run_once
+            from ..pipeline.context import make_ctx
+            from ..pipeline.runner import run_once
             cfg = load_config(self.cfg_path)
             ctx = make_ctx(cfg)
             try:

@@ -6,12 +6,12 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-from ..core.selection import chunks
-from ..core.similarity import SimIndex
-from ..llm import BudgetExceeded, LLMError
-from ..llm.schemas import MergeOut
-from ..storage.db import Row
-from ..storage.ideas import (cluster_root, cluster_roots, mark_unique, merge_into, pending_dedup,
+from ...core.selection import chunks
+from ...core.similarity import SimIndex
+from ...llm import BudgetExceeded, LLMError
+from ...llm.schemas import MergeOut
+from ...storage.db import Row
+from ...storage.ideas import (cluster_root, cluster_roots, mark_unique, merge_into, pending_dedup,
                              refresh_mentions)
 
 if TYPE_CHECKING:

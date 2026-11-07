@@ -131,7 +131,7 @@ def test_discover_accounts_validates(web_cfg, ctx):
     import json as _json
     from conftest import FakeProvider
     from ideaminer.storage.directions import sync_directions
-    from ideaminer.stages.discover import discover_accounts
+    from ideaminer.pipeline.stages.discover import discover_accounts
     sync_directions(web_cfg, ctx.db)
     pages = {"real_seller": page([[post(1, "real_seller", "Озон опять поменял правила возвратов")]]),
              "old_blog": page([[post(2, "old_blog", "давний пост", ts=1600000000)]])}
@@ -202,7 +202,7 @@ def test_enrich_takes_replies_and_adopts_related_authors(web_cfg, ctx):
     from ideaminer.storage.db import loads
     from ideaminer.core.models import RawPost
     from ideaminer.storage.posts import insert_posts
-    from ideaminer.stages.enrich import run_enrich
+    from ideaminer.pipeline.stages.enrich import run_enrich
     web_cfg.sources.threads.mode = "web"
     web_cfg.sources.threads.max_accounts_per_direction = 2
     browser = FakeBrowser([post_page(

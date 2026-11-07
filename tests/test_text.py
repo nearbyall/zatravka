@@ -76,7 +76,7 @@ def test_dotenv_last_nonempty_wins(tmp_path, monkeypatch):
 
 def test_explore_overlap():
     from ideaminer.config import Direction
-    from ideaminer.stages.explore import overlapping
+    from ideaminer.pipeline.stages.explore import overlapping
     dirs = {"ecom": Direction(key="ecom", subreddits=["shopify", "AmazonSeller", "ecommerce", "Etsy"])}
     assert overlapping(["Shopify", "amazonseller", "FulfillmentByAmazon"], dirs, {}) == "ecom"
     assert overlapping(["Beekeeping", "shopify", "gardening"], dirs, {}) is None

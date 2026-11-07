@@ -5,13 +5,13 @@ import random
 from dataclasses import dataclass, field
 from typing import Any
 
-from .config import Config
-from .core.models import Scope
-from .net.http import PoliteHttp
-from .llm import LLM
-from .prompts import render
-from .sources import Source, build_sources
-from .storage.db import DB
+from ..config import Config
+from ..core.models import Scope
+from ..llm import LLM
+from ..net.http import PoliteHttp
+from ..prompts import render
+from ..sources import Source, build_sources
+from ..storage.db import DB
 
 
 @dataclass

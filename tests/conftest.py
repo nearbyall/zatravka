@@ -8,7 +8,7 @@ from typing import Callable
 import pytest
 
 from ideaminer.config import load_config
-from ideaminer.context import make_ctx
+from ideaminer.pipeline.context import make_ctx
 from ideaminer.llm import Usage
 
 ROOT = Path(__file__).resolve().parent.parent

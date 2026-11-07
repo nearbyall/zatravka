@@ -17,9 +17,9 @@ from openpyxl import load_workbook
 from ideaminer.export import export_rows, to_csv, to_json, to_markdown, to_xlsx
 from ideaminer.core.taxonomy import resolve_taxonomy
 from ideaminer.pipeline import run_once
-from ideaminer.planner import make_plan, pick_directions
+from ideaminer.pipeline.planner import make_plan, pick_directions
 from ideaminer.sources.reddit import RedditSource, parse_rss_comments, parse_rss_posts
-from ideaminer.stages.digest import run_digest
+from ideaminer.pipeline.stages.digest import run_digest
 from ideaminer.web.app import create_app, plural
 
 LISTING = (FIXTURES / "reddit_listing.atom").read_bytes()
@@ -253,7 +253,7 @@ def test_scoped_run_processes_only_its_posts(ctx, fake_reddit):
         created_at=None, lang="ru", direction=feed.direction, feed=feed.key)]
     ctx.sources["x"].status = lambda: (True, "тест")
     explored = []
-    import ideaminer.pipeline as pl
+    import ideaminer.pipeline.runner as pl
     orig = pl.run_explore
     pl.run_explore = lambda c: explored.append(1)
     try:
