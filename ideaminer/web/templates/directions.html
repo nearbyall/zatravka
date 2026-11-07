@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Направления — ideaminer{% endblock %}
+{% block main %}
+<section class="lede">
+  <h1>Направления поиска</h1>
+  <p>Каждый прогон берёт обязательные направления и несколько случайных. Чем больше хороших идей даёт
+     направление, тем чаще оно выпадает. Направления с пометкой «ИИ» предложил исследователь; слабые
+     он со временем выключает сам. Свои направления добавляются в <code>config.yaml</code>,
+     аккаунты Threads — командой <code>ideaminer accounts add</code> или подбором <code>ideaminer accounts discover</code>.</p>
+</section>
+
+<div class="table-scroll">
+<table class="data directions">
+  <thead>
+    <tr>
+      <th scope="col">Направление</th>
+      <th scope="col" class="num">Постов</th>
+      <th scope="col" class="num" title="Прошли оценку ИИ">Оценено</th>
+      <th scope="col" class="num" title="Оценка ИИ не ниже порога">Перспективных</th>
+      <th scope="col" class="num" title="Идей с баллом выше порога «хорошей»">Хороших идей</th>
+      <th scope="col" class="num" title="Отдача: (сумма превышений баллов идей над 5 + 1) / (оценено + 10). По ней взвешивается случайный выбор направлений">Отдача</th>
+      <th scope="col">Читали</th>
+      <th scope="col">Включено</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for d in rows %}
+    {% set s = d.stats %}
+    <tr class="{% if not d.enabled %}is-off{% endif %}">
+      <td>
+        <details>
+          <summary>
+            <strong>{{ d.name }}</strong>
+            {% if d.origin == 'llm' %}<span class="badge badge-ai">ИИ</span>{% elif d.origin == 'system' %}<span class="badge">системное</span>{% endif %}
+            <span class="muted">{{ d.key }}</span>
+          </summary>
+          {% if d.rationale %}<p>{{ d.rationale }}</p>{% endif %}
+          {% if d.spec.subreddits %}<p><span class="muted">Сабреддиты:</span> {% for sr in d.spec.subreddits %}<a href="https://www.reddit.com/r/{{ sr }}/" target="_blank" rel="noopener">r/{{ sr }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+          {% if d.spec.reddit_search %}<p><span class="muted">Поиск Reddit:</span> {{ d.spec.reddit_search | join('; ') }}</p>{% endif %}
+          {% if d.spec.x_queries %}<p><span class="muted">X:</span> {{ d.spec.x_queries | join('; ') }}</p>{% endif %}
+          {% if d.spec.threads_queries %}<p><span class="muted">Threads, поиск:</span> {{ d.spec.threads_queries | join('; ') }}</p>{% endif %}
+          {% set accs = accounts.get(d.key, []) %}
+          {% if accs %}<p><span class="muted">Threads, профили:</span>
+            {% for a in accs %}<a href="https://www.threads.com/@{{ a.username }}" target="_blank" rel="noopener"
+               title="{{ ACCOUNT_ORIGIN.get(a.origin, a.origin) }}{% if not a.enabled %}; выключен: {{ a.empty_fetches }} пустых чтения подряд{% endif %}"
+               {% if not a.enabled %}class="muted"{% endif %}>@{{ a.username }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+        </details>
+      </td>
+      <td class="num">{{ s.posts | default(0) | int }}</td>
+      <td class="num">{{ s.triaged | default(0) | int }}</td>
+      <td class="num">{{ s.promising | default(0) | int }}</td>
+      <td class="num">{{ s.good | default(0) | int }}</td>
+      <td class="num">{{ '%.3f' | format(s.get('yield', 0.1)) }}</td>
+      <td class="nowrap muted">{{ d.last_run_at | ago }}{% if d.runs %}, {{ d.runs | plural('раз', 'раза', 'раз') }}{% endif %}</td>
+      <td>
+        {% if d.origin != 'system' %}
+        <button type="button" class="switch" role="switch" aria-checked="{{ 'true' if d.enabled else 'false' }}"
+                data-toggle-direction="{{ d.key }}" aria-label="Включить направление «{{ d.name }}»"><span></span></button>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

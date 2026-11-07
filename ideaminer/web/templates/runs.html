@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Прогоны — ideaminer{% endblock %}
+{% block main %}
+<section class="lede">
+  <h1>Прогоны и расходы</h1>
+  <p>Демон запускает прогон по расписанию из <code>config.yaml</code>. Если бюджет ИИ на день закончился,
+     прогон останавливается, а недоделанное доедает следующий.</p>
+</section>
+
+<div class="table-scroll">
+<table class="data">
+  <thead>
+    <tr><th scope="col">Прогон</th><th scope="col">Итог</th><th scope="col" class="num">Новых постов</th><th scope="col" class="num">Разобрано</th><th scope="col" class="num">Идей</th><th scope="col" class="num">Время</th><th scope="col" class="num">Расход</th></tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    {% set st = r.stats %}
+    <tr>
+      <td class="nowrap">#{{ r.id }} <span class="muted">{{ r.trigger }}, {{ r.started_at | ago }}</span>
+        {% if r.plan.directions %}<br><span class="muted">{{ r.plan.directions | join(', ') }}</span>{% endif %}
+      </td>
+      <td>
+        <span class="badge badge-run-{{ r.status }}">{{ {'ok': 'готово', 'budget': 'упёрся в бюджет', 'error': 'ошибка', 'running': 'идёт', 'aborted': 'прерван', 'busy': 'занято'}.get(r.status, r.status) }}</span>
+        {% if r.error %}<details><summary>подробности</summary><pre class="err">{{ r.error }}</pre></details>{% endif %}
+      </td>
+      <td class="num">{{ st.get('collect', {}).get('new_posts', '—') }}</td>
+      <td class="num">{{ st.get('extract', {}).get('posts', '—') }}</td>
+      <td class="num">{{ st.get('extract', {}).get('ideas', '—') }}</td>
+      <td class="num">{% if st.duration_s %}{{ (st.duration_s / 60) | round(1) }} мин{% else %}—{% endif %}</td>
+      <td class="num">${{ '%.4f' | format(r.cost_usd or 0) }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7">Прогонов ещё не было.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<div class="two">
+  <section aria-labelledby="spend-h">
+    <h2 id="spend-h">Расход ИИ по дням</h2>
+    <table class="data">
+      <thead><tr><th scope="col">День</th><th scope="col" class="num">Вызовов</th><th scope="col" class="num">Токенов</th><th scope="col" class="num">Сбоев</th><th scope="col" class="num">USD</th></tr></thead>
+      <tbody>
+      {% for d in days %}
+        <tr><td>{{ d.day }}</td><td class="num">{{ d.calls }}</td><td class="num">{{ ((d.pin or 0) + (d.pout or 0)) }}</td><td class="num">{{ d.failed or 0 }}</td><td class="num">{{ '%.4f' | format(d.cost or 0) }}</td></tr>
+      {% else %}
+        <tr><td colspan="5">Вызовов ИИ ещё не было.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  <section aria-labelledby="feeds-h">
+    <h2 id="feeds-h">Ленты</h2>
+    <table class="data">
+      <thead><tr><th scope="col">Лента</th><th scope="col">Ответ</th><th scope="col" class="num">Новых</th></tr></thead>
+      <tbody>
+      {% for fd in feeds %}
+        <tr>
+          <td class="feed">{{ fd.feed }}<br><span class="muted">{{ fd.last_fetched_at | ago }}</span></td>
+          <td>{% if fd.last_status == 'ok' %}ok{% else %}<span class="warn">{{ fd.last_status }}</span>{% endif %}</td>
+          <td class="num">{{ fd.new_count }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3">Ленты ещё не читались.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Идеи — ideaminer{% endblock %}
+{% block main %}
+<section class="lede">
+  <h1>Идеи из лент</h1>
+  <p>
+    Прочитано постов: {{ totals.posts }}. Уникальных идей: {{ totals.ideas }}.
+    {% if totals.queue %}Ждут разбора: {{ totals.queue }}.{% endif %}
+    {% if totals.last_run %}Последний прогон {{ totals.last_run.finished_at | ago }}.{% endif %}
+  </p>
+</section>
+
+{% if spheres %}
+{% set cur = f[param] %}
+{% set extra = {'glob': '0'} if axis == 'region' else {} %}
+<section class="map" aria-labelledby="map-h">
+  <div class="map-head">
+    <h2 id="map-h">Где идеи: сфера и {{ {'market': 'рынок', 'region': 'регион', 'nature': 'тип продукта'}[axis] }}</h2>
+    <nav class="axis" aria-label="Что по горизонтали">
+      {% for key, a in AXES.items() %}
+        <a href="{{ url_with(request, axis=None if key == 'market' else key) }}" {% if key == axis %}aria-current="true"{% endif %}>{{ a.label }}</a>
+      {% endfor %}
+    </nav>
+    <p>В клетке — число идей. Нажмите клетку, чтобы оставить в списке только её.{% if axis == 'region' %} Идея может подходить нескольким регионам.{% endif %}</p>
+  </div>
+  <div class="map-scroll">
+    <table class="heat">
+      <thead>
+        <tr>
+          <th scope="col" class="heat-corner">Сфера</th>
+          {% for k, short, label in columns %}
+          <th scope="col" title="{{ label }}">
+            <a href="{{ url_with(request, sphere=None, **dict(extra, **{param: (None if cur == k else k)})) }}"
+               {% if cur == k and not f.sphere %}aria-current="true"{% endif %}>{{ short }}</a>
+          </th>
+          {% endfor %}
+          <th scope="col" class="heat-total">Всего</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sp in spheres %}
+        {% set row = grid[sp] %}
+        <tr>
+          <th scope="row">
+            <a href="{{ url_with(request, sphere=None if f.sphere == sp and not cur else sp, **{param: None}) }}"
+               {% if f.sphere == sp and not cur %}aria-current="true"{% endif %}>{{ sp | sphere }}</a>
+          </th>
+          {% for k, short, label in columns %}
+          {% set c = row.cells.get(k) %}
+          <td>
+            {% if c %}
+            {% set on = f.sphere == sp and cur == k %}
+            <a class="cell{% if on %} cell-on{% endif %}{% if c.n / peak > 0.55 %} cell-dark{% endif %}" style="--t: {{ (c.n / peak) | round(3) }}"
+               href="{{ url_with(request, sphere=None if on else sp, **dict(extra, **{param: (None if on else k)})) }}"
+               data-tip="{{ sp | sphere }}, {{ short }}: {{ c.n | plural('идея', 'идеи', 'идей') }}, лучший балл {{ c.best }}">{{ c.n }}</a>
+            {% else %}<span class="cell cell-empty" aria-label="нет идей"></span>{% endif %}
+          </td>
+          {% endfor %}
+          <td class="heat-total">{{ row.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<form class="filters filters-ideas" method="get" action="/" role="search">
+  {% if f.sphere %}<input type="hidden" name="sphere" value="{{ f.sphere }}">{% endif %}
+  {% if f.market %}<input type="hidden" name="market" value="{{ f.market }}">{% endif %}
+  {% if f.origin %}<input type="hidden" name="origin" value="{{ f.origin }}">{% endif %}
+  {% if axis != 'market' %}<input type="hidden" name="axis" value="{{ axis }}">{% endif %}
+  <label class="field field-q">
+    <span>Поиск</span>
+    <input type="search" name="q" value="{{ f.q or '' }}" placeholder="слово, тег, аудитория">
+  </label>
+  <label class="field">
+    <span>Тип продукта</span>
+    <select name="nature" data-autosubmit>
+      <option value="">любой</option>
+      {% for k, label in NATURE.items() %}
+      <option value="{{ k }}" {% if f.nature == k %}selected{% endif %}>{{ label }} ({{ natures.get(k, 0) }})</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="field">
+    <span>Как найдена</span>
+    <select name="insight" data-autosubmit>
+      <option value="">любая</option>
+      {% for k, label in INSIGHT.items() %}
+      <option value="{{ k }}" {% if f.insight == k %}selected{% endif %}>{{ label }} ({{ insights.get(k, 0) }})</option>
+      {% endfor %}
+    </select>
+  </label>
+  <div class="field field-region">
+    <label for="f-region">Регион запуска</label>
+    <select id="f-region" name="region" data-autosubmit>
+      <option value="">любой</option>
+      {% for k, label in tax.regions.items() %}
+      <option value="{{ k }}" {% if f.region == k %}selected{% endif %} title="{{ label }}">{{ k | region }} ({{ regions.get(k, 0) }})</option>
+      {% endfor %}
+    </select>
+    {% if f.region and f.region != 'global' %}
+    <label class="check"><input type="hidden" name="glob" value="{{ '1' if f.with_global else '0' }}" data-glob>
+      <input type="checkbox" {% if f.with_global %}checked{% endif %} data-glob-toggle> и глобальные</label>
+    {% endif %}
+  </div>
+  <label class="field">
+    <span>Площадка</span>
+    <select name="platform" data-autosubmit>
+      <option value="">любая</option>
+      {% for k, label in PLATFORM.items() %}
+      <option value="{{ k }}" {% if f.platform == k %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="field">
+    <span>Статус</span>
+    <select name="status" data-autosubmit>
+      <option value="active" {% if f.status == 'active' %}selected{% endif %}>без отклонённых</option>
+      {% for k, label in STATUS.items() %}
+      <option value="{{ k }}" {% if f.status == k %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+      <option value="all" {% if f.status == 'all' %}selected{% endif %}>все</option>
+    </select>
+  </label>
+  <label class="field">
+    <span>Сначала</span>
+    <select name="sort" data-autosubmit>
+      {% for k, label in [('score','лучшие'),('new','новые'),('mentions','частые'),('demand','спрос'),('novelty','новизна'),('feasibility','реализуемые')] %}
+      <option value="{{ k }}" {% if f.sort == k %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="field field-num">
+    <span>Балл от</span>
+    <input type="number" name="min_score" min="0" max="10" step="0.5" value="{{ f.min_score if f.min_score is not none else '' }}">
+  </label>
+  <button class="btn" type="submit">Показать</button>
+</form>
+
+<div class="listhead">
+  <p class="count">
+    {{ total | plural('идея', 'идеи', 'идей') }}
+    {% if f.sphere %}
+      <a class="chip chip-x" href="{{ url_with(request, sphere=None) }}" aria-label="Убрать фильтр по сфере">{{ f.sphere | sphere }}</a>
+    {% endif %}
+    {% if f.market %}
+      <a class="chip chip-x" href="{{ url_with(request, market=None) }}" aria-label="Убрать фильтр по рынку">{{ f.market }}</a>
+    {% endif %}
+    {% if f.origin %}
+      <a class="chip chip-x" href="{{ url_with(request, origin=None) }}" aria-label="Убрать фильтр по источнику сигнала">сигнал: {{ f.origin | region }}</a>
+    {% endif %}
+    {% if request.query_params %}<a class="reset" href="/">Сбросить фильтры</a>{% endif %}
+  </p>
+  <p class="exports">Выгрузить:
+    {% set qs = request.url.query %}
+    <a href="/export.xlsx{{ '?' ~ qs if qs }}">Excel</a>
+    <a href="/export.csv{{ '?' ~ qs if qs }}">CSV</a>
+    <a href="/export.json{{ '?' ~ qs if qs }}">JSON</a>
+    <a href="/export.md{{ '?' ~ qs if qs }}">Markdown</a>
+  </p>
+</div>
+
+{% if rows %}
+<ol class="ideas">
+  {% for r in rows %}
+  {% set ev = evidence.get(r.id) %}
+  <li class="idea{% if r.status == 'starred' %} is-starred{% endif %}" data-row="{{ r.id }}">
+    {{ m.grade(r.score) }}
+    <div class="idea-body">
+      <div class="idea-meta">
+        {{ m.insight(r.insight_type) }}
+        {% if r.mentions > 1 %}<span class="mentions" title="Столько раз идея встретилась в разных постах">встречалась {{ r.mentions | plural('раз', 'раза', 'раз') }}</span>{% endif %}
+        {% if r.status not in ('new', 'starred') %}<span class="badge">{{ STATUS[r.status] }}</span>{% endif %}
+      </div>
+      <h3><a href="/idea/{{ r.id }}">{{ r.title }}</a></h3>
+      {% if r.one_liner %}<p class="oneliner">{{ r.one_liner }}</p>{% endif %}
+      <ul class="facts">
+        <li><a href="{{ url_with(request, market=r.market) }}" class="chip chip-market" title="{{ tax.markets.get(r.market, '') }}">{{ r.market }}</a></li>
+        <li><a href="{{ url_with(request, sphere=r.sphere) }}" class="chip">{{ r.sphere | sphere }}</a></li>
+        <li><a href="{{ url_with(request, nature=r.nature) }}" class="chip">{{ NATURE.get(r.nature, r.nature) }}</a></li>
+        <li><span class="chip chip-quiet">{{ r.business_model | model }}</span></li>
+        {% for g in r.regions[:3] %}<li><a href="{{ url_with(request, region=g) }}" class="chip chip-region" title="{{ tax.regions.get(g, g) }}">{{ g | region }}</a></li>{% endfor %}
+        {% if ev %}<li class="src">{{ PLATFORM.get(ev.platform, ev.platform) }}{% if ev.community %}, {{ 'r/' if ev.platform == 'reddit' }}{{ ev.community }}{% endif %}</li>{% endif %}
+      </ul>
+    </div>
+    {{ m.status_buttons(r, compact=true) }}
+  </li>
+  {% endfor %}
+</ol>
+{{ m.pager(request, page, pages) }}
+{% else %}
+<div class="empty">
+  {% if totals.ideas %}
+    <p>Под эти фильтры идей нет. <a href="/">Сбросить фильтры</a></p>
+  {% else %}
+    <h2>Идей пока нет</h2>
+    <p>Запустите первый прогон: система прочитает ленты, отберёт посты и извлечёт из них идеи. Первый прогон
+       идёт 5–15 минут — Reddit без ключа отдаёт ленты медленно.</p>
+    <p><button class="btn btn-primary" type="button" data-run>Запустить прогон</button></p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

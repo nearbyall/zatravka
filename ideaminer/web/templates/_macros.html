@@ -1,0 +1,38 @@
+{% macro pager(request, page, pages) %}
+{% if pages > 1 %}
+<nav class="pager" aria-label="Страницы">
+  {% if page > 1 %}<a class="btn" href="{{ page_url(request, page - 1) }}">Назад</a>{% endif %}
+  <span>Страница {{ page }} из {{ pages }}</span>
+  {% if page < pages %}<a class="btn" href="{{ page_url(request, page + 1) }}">Дальше</a>{% endif %}
+</nav>
+{% endif %}
+{% endmacro %}
+
+{% macro insight(kind) %}
+<span class="insight insight-{{ kind }}"><i aria-hidden="true"></i>{{ INSIGHT.get(kind, kind) }}</span>
+{% endmacro %}
+
+{% macro grade(score, big=false) %}
+<div class="grade{% if big %} grade-big{% endif %}" style="--t: {{ ((score or 0) / 10) | round(3) }}">
+  <span class="grade-num">{{ '%.1f' | format(score or 0) }}</span>
+  <span class="grade-bar" aria-hidden="true"></span>
+</div>
+{% endmacro %}
+
+{% macro status_buttons(idea, compact=false) %}
+<div class="status{% if compact %} status-compact{% endif %}" role="group" aria-label="Статус идеи" data-idea="{{ idea.id }}">
+  {% if compact %}
+    <button type="button" class="icon-btn" data-status="{{ 'new' if idea.status == 'starred' else 'starred' }}"
+            aria-pressed="{{ 'true' if idea.status == 'starred' else 'false' }}" aria-label="В избранное" title="В избранное">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>
+    </button>
+    <button type="button" class="icon-btn" data-status="rejected" aria-label="Отклонить" title="Отклонить">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  {% else %}
+    {% for key, label in STATUS.items() %}
+      <button type="button" data-status="{{ key }}" aria-pressed="{{ 'true' if idea.status == key else 'false' }}">{{ label }}</button>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endmacro %}

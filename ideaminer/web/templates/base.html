@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ideaminer{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css?v=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 28 12 22 29H10L4 12z' fill='%232747C7'/%3E%3C/svg%3E">
+  <script>
+    try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">К содержимому</a>
+  <header class="top">
+    <div class="top-in">
+      <a class="mark" href="/" aria-label="ideaminer — все идеи">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 28 12 22 29H10L4 12z"/><path d="M4 12h24M16 3l-6 9 6 17 6-17z" class="facet"/></svg>
+        <span>ideaminer</span>
+      </a>
+      <nav class="nav" aria-label="Разделы">
+        <a href="/" {% if nav in ('ideas', 'idea') %}aria-current="page"{% endif %}>Идеи</a>
+        <a href="/posts" {% if nav == 'posts' %}aria-current="page"{% endif %}>Посты</a>
+        <a href="/directions" {% if nav == 'directions' %}aria-current="page"{% endif %}>Направления</a>
+        <a href="/runs" {% if nav == 'runs' %}aria-current="page"{% endif %}>Прогоны</a>
+      </nav>
+      <div class="top-tools">
+        <span class="spend" title="Расход на ИИ сегодня из дневного бюджета">
+          <span class="spend-bar" style="--t: {{ [spent_today / budget if budget else 0, 1] | min }}"></span>
+          ${{ '%.3f' | format(spent_today) }} из ${{ '%.2f' | format(budget) }}
+        </span>
+        <button class="btn btn-primary" id="run-btn" type="button" {% if runner.running %}data-running{% endif %}>
+          {% if runner.running %}Прогон идёт{% else %}Запустить прогон{% endif %}
+        </button>
+        <button class="icon-btn" id="theme-btn" type="button" aria-label="Сменить тему">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    {% block main %}{% endblock %}
+  </main>
+
+  <aside class="runlog" id="runlog" hidden aria-live="polite">
+    <div class="runlog-head">
+      <strong id="runlog-title">Прогон идёт</strong>
+      <span id="runlog-time"></span>
+      <button class="icon-btn" id="runlog-close" type="button" aria-label="Скрыть журнал">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <pre id="runlog-lines"></pre>
+    <div class="runlog-foot" id="runlog-foot" hidden>
+      <a class="btn" href="">Обновить страницу</a>
+    </div>
+  </aside>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script src="/static/app.js?v=1" defer></script>
+</body>
+</html>

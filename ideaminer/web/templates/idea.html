@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ idea.title }} — ideaminer{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/">Все идеи</a>{% if idea.sphere %} / <a href="/?sphere={{ idea.sphere }}">{{ idea.sphere | sphere }}</a>{% endif %}</p>
+
+<article class="sheet">
+  <header class="sheet-head">
+    {{ m.grade(idea.score, big=true) }}
+    <div>
+      <div class="idea-meta">
+        {{ m.insight(idea.insight_type) }}
+        {% if idea.mentions > 1 %}<span class="mentions">встречалась {{ idea.mentions | plural('раз', 'раза', 'раз') }}</span>{% endif %}
+        {% if canonical %}<span class="badge">вариант идеи <a href="/idea/{{ canonical.id }}">#{{ canonical.id }}</a></span>{% endif %}
+      </div>
+      <h1>{{ idea.title }}</h1>
+      {% if idea.one_liner %}<p class="sheet-lede">{{ idea.one_liner }}</p>{% endif %}
+      <ul class="facts">
+        <li><span class="chip chip-market" title="{{ tax.markets.get(idea.market, '') }}">{{ idea.market }}</span></li>
+        <li><span class="chip">{{ idea.sphere | sphere }}</span></li>
+        {% for s in idea.spheres_extra %}<li><span class="chip chip-quiet">{{ s | sphere }}</span></li>{% endfor %}
+        <li><span class="chip">{{ NATURE.get(idea.nature, idea.nature) }}</span></li>
+        <li><span class="chip chip-quiet">{{ idea.business_model | model }}</span></li>
+      </ul>
+      {% if idea.regions or idea.origin_region %}
+      <p class="regions-line">
+        {% if idea.regions %}Где запускать:
+          {% for g in idea.regions %}<a href="/?region={{ g }}" class="chip chip-region" title="{{ tax.regions.get(g, g) }}">{{ g | region }}</a> {% endfor %}
+        {% endif %}
+        {% if idea.origin_region %}<span class="muted">Сигнал из: <a href="/?origin={{ idea.origin_region }}">{{ idea.origin_region | region }}</a></span>{% endif %}
+      </p>
+      {% endif %}
+    </div>
+  </header>
+
+  {{ m.status_buttons(idea) }}
+
+  <div class="sheet-grid">
+    <dl class="spec">
+      {% for key, label in [('problem','Проблема'),('solution','Решение'),('audience','Кто покупает'),('reasoning','Как выведена из поста'),('why_now','Почему сейчас'),('monetization','Как зарабатывать'),('risks','Риски')] %}
+        {% if idea[key] %}
+        <div><dt>{{ label }}</dt><dd>{{ idea[key] }}</dd></div>
+        {% endif %}
+      {% endfor %}
+    </dl>
+
+    <aside class="side">
+      <h2>Оценки</h2>
+      <table class="bars">
+        <caption class="sr">Оценки идеи по шкале от 1 до 10</caption>
+        <tbody>
+        {% for key, label in SCORE_LABELS.items() %}
+          {% set v = idea.scores.get(key) %}
+          <tr>
+            <th scope="row">{{ label }}</th>
+            <td><span class="bar" style="--t: {{ ((v or 0) / 10) | round(3) }}" aria-hidden="true"></span></td>
+            <td class="num">{{ v | int if v is not none else '—' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% if idea.score_note %}<p class="note-ai">{{ idea.score_note }}</p>{% endif %}
+      {% if idea.tags %}
+      <ul class="tags">{% for t in idea.tags %}<li><a href="/?q={{ t | urlencode }}">{{ t }}</a></li>{% endfor %}</ul>
+      {% endif %}
+      <label class="field field-note">
+        <span>Заметка</span>
+        <textarea data-note="{{ idea.id }}" rows="4" placeholder="Мысли, проверки, контакты">{{ idea.note or '' }}</textarea>
+      </label>
+      <p class="saved" data-saved hidden>Заметка сохранена</p>
+    </aside>
+  </div>
+</article>
+
+<section class="evidence" aria-labelledby="ev-h">
+  <h2 id="ev-h">Откуда идея</h2>
+  {% for e in evidence %}
+  <figure class="quote">
+    {% if e.quote %}
+    <blockquote>{{ e.quote }}</blockquote>
+    {% endif %}
+    <figcaption>
+      {% if not e.quote_verified %}<span class="warn" title="ИИ привёл цитату, которой нет в тексте дословно — сверьтесь с источником">Цитата не найдена в посте дословно.</span>{% endif %}
+      <a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.title or (e.body or '')[:90] or 'Открыть пост' }}</a>
+      <span class="src">{{ PLATFORM.get(e.platform, e.platform) }}{% if e.community %}, {{ 'r/' if e.platform == 'reddit' }}{{ e.community }}{% endif %}{% if e.author %}, {{ e.author }}{% endif %}, {{ e.created_at | ago }}</span>
+      {% if e.idea_id != idea.id %}<span class="src">через вариант <a href="/idea/{{ e.idea_id }}">«{{ e.idea_title }}»</a></span>{% endif %}
+    </figcaption>
+  </figure>
+  {% else %}
+  <p class="muted">Источник не сохранился.</p>
+  {% endfor %}
+</section>
+
+{% if variants %}
+<section class="related" aria-labelledby="var-h">
+  <h2 id="var-h">Та же идея в других постах</h2>
+  <ul class="plain">
+    {% for v in variants %}<li><a href="/idea/{{ v.id }}">{{ v.title }}</a> <span class="muted">{{ '%.1f' | format(v.score or 0) }}</span></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if similar %}
+<section class="related" aria-labelledby="sim-h">
+  <h2 id="sim-h">Ещё в сфере «{{ idea.sphere | sphere }}»</h2>
+  <ul class="plain">
+    {% for v in similar %}<li><a href="/idea/{{ v.id }}">{{ v.title }}</a> <span class="muted">{{ v.market }}, {{ '%.1f' | format(v.score or 0) }}</span></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

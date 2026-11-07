@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Посты — ideaminer{% endblock %}
+{% block main %}
+<section class="lede">
+  <h1>Посты</h1>
+  <p>Всё, что прочитал сборщик, и что с этим стало: отсеяно фильтром, оценено ИИ, разобрано на идеи.
+     Пригодится, чтобы подкрутить фильтры и направления.</p>
+</section>
+
+<nav class="tabs" aria-label="Статус поста">
+  <a href="{{ url_with(request, status=None) }}" {% if not f.status %}aria-current="page"{% endif %}>Все <span>{{ counts.values() | sum }}</span></a>
+  {% for k in ['extracted', 'promising', 'candidate', 'new', 'skipped', 'filtered', 'error'] %}
+    {% if counts.get(k) %}
+    <a href="{{ url_with(request, status=k) }}" {% if f.status == k %}aria-current="page"{% endif %}>{{ POST_STATUS[k] }} <span>{{ counts[k] }}</span></a>
+    {% endif %}
+  {% endfor %}
+</nav>
+
+<form class="filters" method="get" action="/posts">
+  {% if f.status %}<input type="hidden" name="status" value="{{ f.status }}">{% endif %}
+  <label class="field field-q"><span>Поиск</span><input type="search" name="q" value="{{ f.q or '' }}"></label>
+  <label class="field">
+    <span>Площадка</span>
+    <select name="platform" data-autosubmit>
+      <option value="">любая</option>
+      {% for k, label in PLATFORM.items() %}<option value="{{ k }}" {% if f.platform == k %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field">
+    <span>Направление</span>
+    <select name="direction" data-autosubmit>
+      <option value="">любое</option>
+      {% for d in directions %}<option value="{{ d }}" {% if f.direction == d %}selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn" type="submit">Показать</button>
+</form>
+
+<p class="count">{{ total | plural('пост', 'поста', 'постов') }}</p>
+{% if rows %}
+<div class="table-scroll">
+<table class="data">
+  <thead>
+    <tr><th scope="col">Пост</th><th scope="col">Откуда</th><th scope="col" class="num" title="Предварительная оценка фильтра по сигнальным фразам и вовлечённости">Фильтр</th><th scope="col" class="num" title="Оценка ИИ: сколько в посте материала для идеи, 0–10">ИИ</th><th scope="col">Итог</th></tr>
+  </thead>
+  <tbody>
+  {% for p in rows %}
+    <tr>
+      <td class="post-cell">
+        <a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.title or (p.body or '')[:120] or 'без текста' }}</a>
+        {% if p.triage_note %}<p>{{ p.triage_note }}</p>
+        {% elif p.title and p.body %}<p class="muted">{{ p.body | truncate(180) }}</p>{% endif %}
+      </td>
+      <td class="nowrap">{{ PLATFORM.get(p.platform, p.platform) }}{% if p.community %}<br><span class="muted">{{ 'r/' if p.platform == 'reddit' }}{{ p.community }}</span>{% endif %}<br><span class="muted">{{ p.created_at | ago }}</span></td>
+      <td class="num">{{ p.prefilter_score if p.prefilter_score is not none else '—' }}</td>
+      <td class="num">{{ p.triage_score | int if p.triage_score is not none else '—' }}</td>
+      <td>
+        <span class="badge badge-{{ p.status }}">{{ POST_STATUS.get(p.status, p.status) }}</span>
+        {% if p.status == 'filtered' and p.prefilter_reason %}<span class="muted">{{ p.prefilter_reason }}</span>{% endif %}
+        {% if p.n_ideas %}<span class="muted">{{ p.n_ideas | plural('идея', 'идеи', 'идей') }}</span>{% endif %}
+        {% if p.error %}<span class="warn" title="{{ p.error }}">ошибка ИИ</span>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{{ m.pager(request, page, pages) }}
+{% else %}
+<div class="empty"><p>Постов с такими условиями нет.</p></div>
+{% endif %}
+{% endblock %}
