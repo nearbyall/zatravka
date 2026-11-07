@@ -81,3 +81,11 @@ def test_explore_overlap():
     assert overlapping(["Shopify", "amazonseller", "FulfillmentByAmazon"], dirs, {}) == "ecom"
     assert overlapping(["Beekeeping", "shopify", "gardening"], dirs, {}) is None
     assert overlapping(["a", "b"], dirs, {"new1": ["a", "b", "c"]}) == "new1"
+
+
+def test_safe_url_keeps_only_web_links():
+    from ideaminer.web.views import safe_url
+    assert safe_url("https://www.threads.com/@a/post/B") == "https://www.threads.com/@a/post/B"
+    assert safe_url("JaVaScRiPt:alert(1)") == "#"
+    assert safe_url("data:text/html,x") == "#"
+    assert safe_url(None) == "#"

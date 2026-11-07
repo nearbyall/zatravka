@@ -20,7 +20,8 @@ from ideaminer.pipeline import run_once
 from ideaminer.pipeline.planner import make_plan, pick_directions
 from ideaminer.sources.reddit import RedditSource, parse_rss_comments, parse_rss_posts
 from ideaminer.pipeline.stages.digest import run_digest
-from ideaminer.web.app import create_app, plural
+from ideaminer.web.app import create_app
+from ideaminer.web.views import plural
 
 LISTING = (FIXTURES / "reddit_listing.atom").read_bytes()
 COMMENTS = (FIXTURES / "reddit_comments.atom").read_bytes()

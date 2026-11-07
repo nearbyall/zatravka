@@ -81,7 +81,7 @@
     {% endif %}
     <figcaption>
       {% if not e.quote_verified %}<span class="warn" title="ИИ привёл цитату, которой нет в тексте дословно — сверьтесь с источником">Цитата не найдена в посте дословно.</span>{% endif %}
-      <a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.title or (e.body or '')[:90] or 'Открыть пост' }}</a>
+      <a href="{{ e.url | safe_url }}" target="_blank" rel="noopener">{{ e.title or (e.body or '')[:90] or 'Открыть пост' }}</a>
       <span class="src">{{ PLATFORM.get(e.platform, e.platform) }}{% if e.community %}, {{ 'r/' if e.platform == 'reddit' }}{{ e.community }}{% endif %}{% if e.author %}, {{ e.author }}{% endif %}, {{ e.created_at | ago }}</span>
       {% if e.idea_id != idea.id %}<span class="src">через вариант <a href="/idea/{{ e.idea_id }}">«{{ e.idea_title }}»</a></span>{% endif %}
     </figcaption>

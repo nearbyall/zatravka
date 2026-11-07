@@ -48,7 +48,7 @@
   {% for p in rows %}
     <tr>
       <td class="post-cell">
-        <a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.title or (p.body or '')[:120] or 'без текста' }}</a>
+        <a href="{{ p.url | safe_url }}" target="_blank" rel="noopener">{{ p.title or (p.body or '')[:120] or 'без текста' }}</a>
         {% if p.triage_note %}<p>{{ p.triage_note }}</p>
         {% elif p.title and p.body %}<p class="muted">{{ p.body | truncate(180) }}</p>{% endif %}
       </td>
