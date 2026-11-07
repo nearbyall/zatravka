@@ -248,22 +248,25 @@ Excel-выгрузка — книга из трёх листов. «Идеи»: 
 
 ## Устройство
 
+Слои зависят только от нижележащих: `core` ничего не знает о базе и сети, `storage` —
+о конвейере, а CLI и веб работают через репозитории и не содержат SQL.
+
 ```
 ideaminer/
   config.py        типизированный конфиг + .env
-  db.py            SQLite (WAL): posts, ideas, idea_evidence, directions, runs, llm_calls, feed_state
-  http.py          вежливый HTTP-клиент: паузы по хостам, x-ratelimit-*, Retry-After
-  sources/         reddit (RSS/OAuth), x (API v2), threads (api + web), rss, inbox
-  browser.py       честный headless-рендер страниц (Chromium, без входа и маскировки)
-  accounts.py      реестр аккаунтов для чтения профилей
-  planner.py       выбор направлений и лент (взвешенный случай)
-  prefilter.py     язык, спам, сигнальные фразы
-  llm/             DeepSeek + Replicate, JSON-схемы, бюджет, учёт стоимости
+  core/            логика без ввода-вывода: модели, префильтр, похожесть текстов,
+                   баллы, таксономия, выборки, подписи
+  storage/         SQLite (WAL): подключение, миграции и репозитории — posts, ideas,
+                   idea_queries (выборки для интерфейса), directions, accounts, runs, feeds, usage
+  net/             вежливый HTTP-клиент и честный headless-рендер (Chromium без входа и маскировки)
+  llm/             провайдеры DeepSeek и Replicate, JSON-схемы, бюджет, учёт стоимости
   prompts/         промпты стадий (Markdown, правятся без кода)
-  stages/          collect, triage, enrich, extract, classify, dedup, explore, digest
-  pipeline.py      прогон и демон
-  export.py        выборки и экспорт
-  web/             FastAPI + Jinja2
+  sources/         reddit (RSS/OAuth), x (API v2), threads (api + web + auth), rss, inbox
+  pipeline/        контекст, планировщик, стадии (collect, triage, enrich, extract,
+                   classify, dedup, explore, digest, discover), прогон и демон
+  export/          записи для выгрузки и форматы: Excel, CSV, JSON, Markdown
+  cli/             команды по группам: прогоны, идеи, аккаунты, настройка
+  web/             FastAPI + Jinja2: роутеры, фоновый прогон, хелперы шаблонов
 ```
 
 Новый источник — класс-наследник `sources.base.Source` с методами `status`, `plan`
