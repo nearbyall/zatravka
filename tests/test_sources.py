@@ -60,11 +60,11 @@ def test_reddit_plan_and_urls(cfg, ctx):
     kinds = [f.kind for f in feeds]
     assert kinds.count("listing") == 2 and kinds.count("search") == 1
     search = next(f for f in feeds if f.kind == "search")
-    url = src._url(search)
+    url = src.feed_url(search)
     assert url.startswith("https://www.reddit.com/r/a+b+c+d+e/search.rss?") and "restrict_sr=on" in url
-    site = src._url(FeedSpec("reddit", "search", "x y", "k", {"subs": "", "t": "week"}))
+    site = src.feed_url(FeedSpec("reddit", "search", "x y", "k", {"subs": "", "t": "week"}))
     assert site.startswith("https://www.reddit.com/search.rss?q=x+y")
-    listing = src._url(FeedSpec("reddit", "listing", "a+b", "k", {"listing": "top_week"}))
+    listing = src.feed_url(FeedSpec("reddit", "listing", "a+b", "k", {"listing": "top_week"}))
     assert listing == "https://www.reddit.com/r/a+b/top/.rss?limit=50&t=week"
 
 

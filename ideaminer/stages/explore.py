@@ -112,7 +112,7 @@ def _valid_subreddits(names: list[str]) -> list[str]:
 
 def _live_subreddits(ctx: "Ctx", subs: list[str]) -> list[str]:
     reddit = ctx.sources.get("reddit")
-    if not reddit or not reddit.status()[0]:
+    if not reddit or not reddit.status().ok:
         return subs
     return [s for s in subs[:MAX_SUBREDDIT_CHECKS] if reddit.subreddit_exists(s) is not False]
 

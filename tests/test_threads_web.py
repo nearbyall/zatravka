@@ -74,11 +74,11 @@ def test_backend_selection(web_cfg, ctx):
     api = ThreadsApiBackend(web_cfg, ctx.http)
     src = ThreadsSource(web_cfg, ctx.http, ctx.db, backends={"api": api, "web": web})
     assert src.status() == (True, "публичные профили без входа (headless-браузер)")
-    assert src.kinds() == {"profile"}  # без токена поиска по словам нет
+    assert src.kinds() == {"profile", "post"}  # без токена поиска по словам нет
     web_cfg.secrets.threads_access_token = "t"
     assert src.kinds() == {"keyword", "profile"} and src.status()[1] == "официальный Threads API"
     web_cfg.sources.threads.mode = "web"
-    assert src.kinds() == {"profile"}
+    assert src.kinds() == {"profile", "post"}
     web_cfg.sources.threads.enabled = False
     assert src.status()[0] is False and src.kinds() == frozenset()
 

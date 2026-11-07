@@ -2,26 +2,31 @@ from __future__ import annotations
 
 import random
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from ..core.models import Comment, FeedSpec, RawPost
 
 if TYPE_CHECKING:
     from ..config import Config, Direction
-    from ..storage.db import DB
     from ..net.http import PoliteHttp
+    from ..storage.db import DB, Row
 
 
 class SourceLimitReached(RuntimeError):
-    """Источник упёрся в собственный лимит (например, платное чтение X) — ленту пропускаем."""
+    """The source hit its own limit (such as paid X reads); the feed is skipped."""
 
 
 class SourceUnavailable(SourceLimitReached):
-    """Источник сейчас не может читать (нет браузера, площадка закрылась) — ленту пропускаем."""
+    """The source cannot read right now (no browser, the site closed up); the feed is skipped."""
+
+
+class Availability(NamedTuple):
+    ok: bool
+    reason: str
 
 
 class Source(ABC):
-    """Источник постов. Планирует ленты для направления и читает их."""
+    """A source of posts: plans feeds for a direction and reads them."""
 
     name: str = ""
 
@@ -31,24 +36,24 @@ class Source(ABC):
         self.db = db
 
     @abstractmethod
-    def status(self) -> tuple[bool, str]:
-        """(доступен ли, пояснение) — для `ideaminer doctor` и планировщика."""
-
-    def plan(self, direction: "Direction", rng: random.Random) -> list[FeedSpec]:
-        """Ленты этого источника для одного направления."""
-        return []
-
-    def plan_global(self, rng: random.Random) -> list[FeedSpec]:
-        """Ленты, не привязанные к направлениям (свои RSS, файлы, аккаунты)."""
-        return []
+    def status(self) -> Availability:
+        ...
 
     @abstractmethod
     def fetch(self, feed: FeedSpec) -> list[RawPost]:
         ...
 
-    def comments(self, post: dict) -> list[Comment]:
-        """Лучшие комментарии к посту (строка из таблицы posts). По умолчанию нет."""
+    def plan(self, direction: "Direction", rng: random.Random) -> list[FeedSpec]:
+        """Feeds of this source for one direction."""
+        return []
+
+    def plan_global(self, rng: random.Random) -> list[FeedSpec]:
+        """Feeds not tied to a direction: own RSS feeds, files, shared accounts."""
+        return []
+
+    def comments(self, post: "Row") -> list[Comment]:
+        """Top comments for a stored post."""
         return []
 
     def after_ingest(self, feed: FeedSpec) -> None:
-        """Хук после сохранения постов ленты в БД."""
+        """Called after the feed's posts are stored."""

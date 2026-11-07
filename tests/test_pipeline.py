@@ -207,7 +207,7 @@ def test_region_focus_and_hints(ctx, fake_reddit):
 
 
 def test_threads_token_refresh(ctx, monkeypatch):
-    import ideaminer.sources.threads.api as th
+    import ideaminer.sources.threads.auth as th
     monkeypatch.setenv("THREADS_ACCESS_TOKEN", "env-token")
     ctx.cfg.secrets.threads_access_token = "env-token"
     calls = []

@@ -26,7 +26,7 @@ def check_account(ctx: "Ctx", username: str, direction: str | None = None) -> tu
     """Opens the profile and decides whether it is worth reading: text posts, the latest one fresh."""
     source = ctx.sources["threads"]
     if "profile" not in source.kinds():
-        return False, "Threads сейчас не читается: " + source.status()[1]
+        return False, "Threads сейчас не читается: " + source.status().reason
     try:
         posts = source.fetch(FeedSpec("threads", "profile", username, direction or "wildcard", {"probe": 1}))
     except SourceLimitReached as e:

@@ -25,7 +25,7 @@ def run_enrich(ctx: "Ctx", limit: int | None = None) -> None:
 
 def _fetch_comments(ctx: "Ctx", post: Row) -> list[Comment]:
     source = ctx.sources.get(post["platform"])
-    if not source or not source.status()[0]:
+    if not source or not source.status().ok:
         return []
     try:
         return source.comments(post)
