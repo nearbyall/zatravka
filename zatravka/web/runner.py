@@ -24,7 +24,7 @@ class Runner:
         self.started: float | None = None
         handler = logging.Handler(logging.INFO)
         handler.emit = self._emit  # type: ignore[method-assign]
-        pipeline_log = logging.getLogger("ideaminer")
+        pipeline_log = logging.getLogger("zatravka")
         pipeline_log.addHandler(handler)
         pipeline_log.setLevel(logging.INFO)
 
@@ -38,7 +38,7 @@ class Runner:
         self.lines.clear()
         self.result = None
         self.started = time.time()
-        self.thread = threading.Thread(target=self._work, args=(collect,), daemon=True, name="ideaminer-run")
+        self.thread = threading.Thread(target=self._work, args=(collect,), daemon=True, name="zatravka-run")
         self.thread.start()
         return True
 

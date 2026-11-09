@@ -7,14 +7,14 @@ WORKDIR /app
 # is the sandbox, hence no Chromium sandbox.
 RUN apt-get update && apt-get install -y --no-install-recommends chromium fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
-ENV IDEAMINER_CHROMIUM=/usr/bin/chromium IDEAMINER_CHROMIUM_NO_SANDBOX=1
+ENV ZATRAVKA_CHROMIUM=/usr/bin/chromium ZATRAVKA_CHROMIUM_NO_SANDBOX=1
 
 COPY pyproject.toml README.md ./
-COPY ideaminer ./ideaminer
+COPY zatravka ./zatravka
 RUN pip install . && mkdir -p /app/data
 
-# compose.yaml sets the real user (IDEAMINER_UID/GID) so files in ./data belong to you,
+# compose.yaml sets the real user (ZATRAVKA_UID/GID) so files in ./data belong to you,
 # and mounts config.yaml, .env and the data/ volume.
 ENV HOME=/tmp
 USER 1000
-CMD ["ideaminer", "daemon"]
+CMD ["zatravka", "daemon"]

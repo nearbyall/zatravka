@@ -1,4 +1,4 @@
-"""Command line: ideaminer <command>; see ideaminer <command> -h."""
+"""Command line: zatravka <command>; see zatravka <command> -h."""
 from __future__ import annotations
 
 import sys

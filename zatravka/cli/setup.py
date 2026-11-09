@@ -73,7 +73,7 @@ def _x_line(ctx: Ctx) -> str:
         return f"  ✗ x        API ответил {r.status_code}: {r.text[:160]}"
     d = r.json().get("data", {})
     return (f"  ✓ x        токен рабочий; прочитано постов в периоде: {d.get('project_usage', '?')}"
-            f" из {d.get('project_cap', '?')}; сегодня ideaminer прочитал"
+            f" из {d.get('project_cap', '?')}; сегодня zatravka прочитал"
             f" {ctx.sources['x'].reads_today()} из {cfg.sources.x.daily_read_limit or '∞'}")
 
 

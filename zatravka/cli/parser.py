@@ -12,8 +12,8 @@ REGIONS_HELP = "cis, eu, north_america, latam, east_europe, mena, africa, south_
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="ideaminer", description="Поиск продуктовых идей в Reddit, X и Threads")
-    p.add_argument("-c", "--config", help="путь к config.yaml (по умолчанию ./config.yaml или $IDEAMINER_CONFIG)")
+    p = argparse.ArgumentParser(prog="zatravka", description="Поиск продуктовых идей в Reddit, X и Threads")
+    p.add_argument("-c", "--config", help="путь к config.yaml (по умолчанию ./config.yaml или $ZATRAVKA_CONFIG)")
     p.add_argument("--set", action="append", metavar="KEY=VALUE",
                    help="переопределить настройку, напр. --set triage.max_posts_per_run=20")
     p.add_argument("-v", "--verbose", action="store_true")

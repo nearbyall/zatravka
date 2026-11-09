@@ -26,7 +26,7 @@ class Ctx:
     run_id: int | None = None
     scope: Scope = field(default_factory=Scope)
     stats: dict[str, Any] = field(default_factory=dict)
-    log: logging.Logger = field(default_factory=lambda: logging.getLogger("ideaminer"))
+    log: logging.Logger = field(default_factory=lambda: logging.getLogger("zatravka"))
 
     def prompt(self, name: str, **values: Any) -> str:
         values.setdefault("language", self.cfg.output_language)

@@ -22,7 +22,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     db = DB(cfg.db_path)
     sync_directions(cfg, db)
     tax = resolve_taxonomy(cfg)
-    app = FastAPI(title="ideaminer", docs_url="/api/docs", redoc_url=None)
+    app = FastAPI(title="zatravka", docs_url="/api/docs", redoc_url=None)
     app.state.web = WebState(cfg=cfg, db=db, tax=tax, runner=Runner(cfg.base_dir / "config.yaml"),
                              templates=build_templates(tax))
     app.mount("/static", StaticFiles(directory=STATIC), name="static")

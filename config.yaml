@@ -1,18 +1,18 @@
-# ideaminer configuration. Paths are relative to this file; secrets live in .env
+# zatravka configuration. Paths are relative to this file; secrets live in .env
 # (see .env.example).
 
 # The language of generated ideas. Evidence quotes stay in the original language.
 output_language: ru
 
 storage:
-  db_path: data/ideaminer.db
+  db_path: data/zatravka.db
   inbox_dir: data/inbox          # JSON/JSONL/CSV files with posts to import
   exports_dir: data/exports
   digests_dir: data/digests
-  prompts_dir: null              # custom prompts folder (default: ideaminer/prompts)
+  prompts_dir: null              # custom prompts folder (default: zatravka/prompts)
 
 http:
-  user_agent: "ideaminer/0.1 (personal research of public posts)"
+  user_agent: "zatravka/0.1 (personal research of public posts)"
   timeout_s: 30
   max_retries: 3
   max_rate_wait_s: 120           # never wait longer than this for a rate limit reset
@@ -95,7 +95,7 @@ sources:
     # Web mode reads public profiles and post pages (first replies) logged out through
     # headless Chromium; there is no keyword search without a login. Automated collection
     # is against Meta's terms, so use it at your own risk. Accounts come from
-    # `ideaminer accounts add/discover` and the threads_accounts field of directions.
+    # `zatravka accounts add/discover` and the threads_accounts field of directions.
     web:
       enabled: true
       browser: null            # Chromium path; null finds it in PATH or the Playwright cache
@@ -211,7 +211,7 @@ web:
   port: 8610
 
 # Taxonomy: keys are machine names, values are labels. After changing it run
-# `ideaminer reclassify --all` to relabel every idea.
+# `zatravka reclassify --all` to relabel every idea.
 taxonomy:
   markets:
     B2B: "Бизнесу (компании, ИП, профессионалы как покупатели)"

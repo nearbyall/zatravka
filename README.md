@@ -1,4 +1,4 @@
-# ideaminer
+# zatravka
 
 Автоматический поиск продуктовых и бизнес-идей в лентах Reddit, X и Threads. Система сама выбирает,
 что читать, отсеивает мусор, отдаёт перспективные посты ИИ и раскладывает найденные идеи по
@@ -19,12 +19,12 @@
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 cp .env.example .env            # ключи; уже заполнен ключами DeepSeek/Replicate из соседних проектов
-.venv/bin/ideaminer init        # база + проверка источников, ключей, баланса
-.venv/bin/ideaminer run         # один полный прогон (с публичным RSS Reddit — 10–20 минут)
-.venv/bin/ideaminer serve       # интерфейс на http://127.0.0.1:8610
+.venv/bin/zatravka init        # база + проверка источников, ключей, баланса
+.venv/bin/zatravka run         # один полный прогон (с публичным RSS Reddit — 10–20 минут)
+.venv/bin/zatravka serve       # интерфейс на http://127.0.0.1:8610
 ```
 
-Работать по расписанию: `ideaminer daemon` или в Docker:
+Работать по расписанию: `zatravka daemon` или в Docker:
 
 ```bash
 docker compose up -d web          # только интерфейс на 127.0.0.1:8610, ИИ-бюджет не тратит
@@ -49,7 +49,7 @@ docker compose down               # остановить всё; данные о
 
 Из коробки работают Reddit через RSS и Threads в веб-режиме. X и официальный API Threads
 включаются сами, как только в `.env` появляется токен (`enabled: auto`). Проверить доступ:
-`ideaminer doctor`.
+`zatravka doctor`.
 
 ### Threads без токена: веб-режим
 
@@ -62,10 +62,10 @@ docker compose down               # остановить всё; данные о
 источник сам переключится на официальный API (`sources.threads.mode: auto`).
 
 ```bash
-ideaminer accounts add @имя1 @имя2 --direction region_cis   # добавить аккаунты к направлению
-ideaminer accounts check @имя                               # открыть профиль и показать, что видно
-ideaminer accounts discover --direction cis_sellers --count 12   # ИИ предлагает, браузер проверяет
-ideaminer accounts list
+zatravka accounts add @имя1 @имя2 --direction region_cis   # добавить аккаунты к направлению
+zatravka accounts check @имя                               # открыть профиль и показать, что видно
+zatravka accounts discover --direction cis_sellers --count 12   # ИИ предлагает, браузер проверяет
+zatravka accounts list
 ```
 
 ИИ часто выдумывает имена: из 12 кандидатов обычно проходит 1–3, остальные отсеиваются проверкой.
@@ -85,7 +85,7 @@ Chromium ищется в PATH и кэше Playwright, в Docker-образ он 
    запросы или тариф. Бесплатный уровень поиск не включает. Актуальные цены — в кабинете.
 3. App → *Keys and tokens* → *Bearer Token* → *Generate*. Добавьте в `.env`:
    `X_BEARER_TOKEN=...`
-4. `ideaminer doctor` проверит токен и покажет, сколько постов прочитано из лимита проекта.
+4. `zatravka doctor` проверит токен и покажет, сколько постов прочитано из лимита проекта.
 5. Расход регулируется в `config.yaml`: `sources.x.max_results` (10–100 постов на запрос) и
    `queries_per_direction`. Прогон читает примерно «направлений × запросов × max_results»
    постов, по умолчанию 6 × 1 × 10 = 60, то есть ≈ $0.30 за прогон при $0.005 за пост.
@@ -102,10 +102,10 @@ Chromium ищется в PATH и кэше Playwright, в Docker-образ он 
    пользователя (или OAuth `threads.net/oauth/authorize`).
 5. Обменяйте его на долгий (60 дней) и сохраните в `.env` одной командой:
    ```bash
-   ideaminer threads-token <короткий_токен> --app-secret <секрет_приложения> --save
+   zatravka threads-token <короткий_токен> --app-secret <секрет_приложения> --save
    ```
    Секрет приложения: *App settings → Basic → App secret* (у сценария Threads свой секрет).
-   Дальше токен продлевает сам ideaminer: раз в три дня, при каждом прогоне.
+   Дальше токен продлевает сам zatravka: раз в три дня, при каждом прогоне.
 6. Ограничение Meta: пока приложение не прошло App Review на `threads_keyword_search`, поиск
    находит только посты вашего собственного аккаунта. Для настоящего исследования подайте
    приложение на ревью (понадобятся политика конфиденциальности и запись экрана).
@@ -183,7 +183,7 @@ Chromium ищется в PATH и кэше Playwright, в Docker-образ он 
 - `planner.regions: [cis, eu]`: жёсткий фокус — направления этих регионов идут в каждый прогон,
   а направления других регионов не читаются. Список регионов — в
 `taxonomy.regions`. После его правки идеи переразмечаются автоматически в следующих прогонах
-(или сразу: `ideaminer reclassify`).
+(или сразу: `zatravka reclassify`).
 
 ## Настройка
 
@@ -193,38 +193,38 @@ Chromium ищется в PATH и кэше Playwright, в Docker-образ он 
   ключевые слова Threads. Добавили — подхватится на следующем прогоне. Демон перечитывает
   конфиг каждый цикл.
 - `taxonomy` — рынки, сферы, типы продукта, модели. После правки выполните
-  `ideaminer reclassify`, и ИИ переразметит идеи под новую таксономию.
-- `scoring.weights` — веса оценок. После правки — `ideaminer rescore` (без ИИ).
+  `zatravka reclassify`, и ИИ переразметит идеи под новую таксономию.
+- `scoring.weights` — веса оценок. После правки — `zatravka rescore` (без ИИ).
 - `prefilter.signals` и `spam_patterns` — регулярки с весами.
 - `triage.threshold`, `random_share`, `extract.max_posts_per_run` — строгость и объём.
 - `budget`, `schedule` — деньги и расписание.
-- Промпты лежат в `ideaminer/prompts/*.md`. Их можно править на месте или указать свою папку
+- Промпты лежат в `zatravka/prompts/*.md`. Их можно править на месте или указать свою папку
   в `storage.prompts_dir` (переопределять можно не все файлы, а только нужные).
 
-Разовые переопределения без правки файла: `ideaminer --set triage.max_posts_per_run=30 run`.
+Разовые переопределения без правки файла: `zatravka --set triage.max_posts_per_run=30 run`.
 
 ## Команды
 
 ```
-ideaminer init                      база, проверка окружения
-ideaminer doctor                    источники, ключи, баланс DeepSeek, расход за сегодня
-ideaminer run [--directions a,b] [--sources reddit] [--no-llm] [--explore] [--digest] [--seed N]
-ideaminer collect                   только сбор, без ИИ
-ideaminer process                   ИИ-обработка накопленной очереди без сбора
-ideaminer explore                   ИИ предлагает новые направления прямо сейчас
-ideaminer ideas [--market B2B] [--sphere games] [--nature physical] [--insight lateral] [--region cis]
+zatravka init                      база, проверка окружения
+zatravka doctor                    источники, ключи, баланс DeepSeek, расход за сегодня
+zatravka run [--directions a,b] [--sources reddit] [--no-llm] [--explore] [--digest] [--seed N]
+zatravka collect                   только сбор, без ИИ
+zatravka process                   ИИ-обработка накопленной очереди без сбора
+zatravka explore                   ИИ предлагает новые направления прямо сейчас
+zatravka ideas [--market B2B] [--sphere games] [--nature physical] [--insight lateral] [--region cis]
                 [--platform reddit] [--q текст] [--min-score 6] [--days 7] [--sort score|new|mentions|novelty|demand|feasibility]
-ideaminer export [--format xlsx|csv|json|md] [те же фильтры] [--out файл]   по умолчанию Excel
-ideaminer digest [--days 1] [--send]   Markdown-дайджест в data/digests (+ Telegram)
-ideaminer import файл.json [--direction ключ]
-ideaminer reclassify [--all]        переразметка после смены таксономии
-ideaminer rescore                   пересчёт баллов после смены весов
-ideaminer stats                     статистика базы, направлений, расходов
-ideaminer daemon                    прогоны по расписанию + ежедневный дайджест
-ideaminer serve [--host --port]     веб-интерфейс
-ideaminer unlock                    снять зависшую блокировку прогона
-ideaminer threads-token КОРОТКИЙ --app-secret СЕКРЕТ [--save]   долгий токен Threads
-ideaminer accounts list|add|remove|check|discover [@имя…] [--direction ключ] [--count N]
+zatravka export [--format xlsx|csv|json|md] [те же фильтры] [--out файл]   по умолчанию Excel
+zatravka digest [--days 1] [--send]   Markdown-дайджест в data/digests (+ Telegram)
+zatravka import файл.json [--direction ключ]
+zatravka reclassify [--all]        переразметка после смены таксономии
+zatravka rescore                   пересчёт баллов после смены весов
+zatravka stats                     статистика базы, направлений, расходов
+zatravka daemon                    прогоны по расписанию + ежедневный дайджест
+zatravka serve [--host --port]     веб-интерфейс
+zatravka unlock                    снять зависшую блокировку прогона
+zatravka threads-token КОРОТКИЙ --app-secret СЕКРЕТ [--save]   долгий токен Threads
+zatravka accounts list|add|remove|check|discover [@имя…] [--direction ключ] [--count N]
 ```
 
 Excel-выгрузка — книга из трёх листов. «Идеи»: все поля, шесть оценок, русские подписи, автофильтр,
@@ -252,7 +252,7 @@ Excel-выгрузка — книга из трёх листов. «Идеи»: 
 о конвейере, а CLI и веб работают через репозитории и не содержат SQL.
 
 ```
-ideaminer/
+zatravka/
   config.py        типизированный конфиг + .env
   core/            логика без ввода-вывода: модели, префильтр, похожесть текстов,
                    баллы, таксономия, выборки, подписи

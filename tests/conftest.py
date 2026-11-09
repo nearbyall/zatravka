@@ -7,9 +7,9 @@ from typing import Callable
 
 import pytest
 
-from ideaminer.config import load_config
-from ideaminer.pipeline.context import make_ctx
-from ideaminer.llm import Usage
+from zatravka.config import load_config
+from zatravka.pipeline.context import make_ctx
+from zatravka.llm import Usage
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -85,7 +85,7 @@ def no_network(monkeypatch):
 
 @pytest.fixture
 def cfg(tmp_path):
-    from ideaminer.config import Secrets
+    from zatravka.config import Secrets
     c = load_config(ROOT / "config.yaml", {
         "storage": {"db_path": str(tmp_path / "test.db"), "inbox_dir": str(tmp_path / "inbox"),
                     "exports_dir": str(tmp_path / "exports"), "digests_dir": str(tmp_path / "digests")},

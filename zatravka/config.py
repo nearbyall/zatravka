@@ -17,7 +17,7 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 
 
 class Storage(BaseModel):
-    db_path: str = "data/ideaminer.db"
+    db_path: str = "data/zatravka.db"
     inbox_dir: str = "data/inbox"
     exports_dir: str = "data/exports"
     digests_dir: str = "data/digests"
@@ -25,7 +25,7 @@ class Storage(BaseModel):
 
 
 class Http(BaseModel):
-    user_agent: str = "ideaminer/0.1 (personal research of public posts)"
+    user_agent: str = "zatravka/0.1 (personal research of public posts)"
     timeout_s: float = 30
     max_retries: int = 3
     max_rate_wait_s: float = 120
@@ -346,7 +346,7 @@ def read_secrets() -> Secrets:
 def find_config(explicit: str | None = None) -> Path:
     if explicit:
         return Path(explicit).resolve()
-    env = os.environ.get("IDEAMINER_CONFIG")
+    env = os.environ.get("ZATRAVKA_CONFIG")
     if env:
         return Path(env).resolve()
     return (Path.cwd() / "config.yaml").resolve()

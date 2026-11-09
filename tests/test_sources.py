@@ -3,13 +3,13 @@ import random
 
 from conftest import FIXTURES
 
-from ideaminer.config import Direction
-from ideaminer.core.models import FeedSpec
-from ideaminer.sources.inbox import InboxSource
-from ideaminer.sources.reddit import RedditSource, parse_api_comments, parse_api_listing, parse_rss_comments, parse_rss_posts
-from ideaminer.sources.rss import parse_feed
-from ideaminer.sources.threads import parse_threads
-from ideaminer.sources.x import parse_search
+from zatravka.config import Direction
+from zatravka.core.models import FeedSpec
+from zatravka.sources.inbox import InboxSource
+from zatravka.sources.reddit import RedditSource, parse_api_comments, parse_api_listing, parse_rss_comments, parse_rss_posts
+from zatravka.sources.rss import parse_feed
+from zatravka.sources.threads import parse_threads
+from zatravka.sources.x import parse_search
 
 
 def test_reddit_rss_listing():
@@ -117,8 +117,8 @@ def test_inbox_formats(cfg, ctx, tmp_path):
 
 def test_x_daily_read_limit(cfg, ctx, monkeypatch):
     import pytest
-    from ideaminer.sources.base import SourceLimitReached
-    from ideaminer.sources.x import XSource
+    from zatravka.sources.base import SourceLimitReached
+    from zatravka.sources.x import XSource
 
     class Resp:
         def json(self):

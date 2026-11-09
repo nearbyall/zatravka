@@ -13,7 +13,7 @@ from .context import Ctx, make_ctx
 from .runner import run_once
 from .stages.digest import run_digest
 
-log = logging.getLogger("ideaminer")
+log = logging.getLogger("zatravka")
 
 MIN_SLEEP_S = 60
 BUSY_RETRY_S = 600

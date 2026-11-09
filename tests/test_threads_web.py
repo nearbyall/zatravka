@@ -3,12 +3,12 @@ import random
 
 import pytest
 
-from ideaminer.storage.accounts import add_account, normalize_username, pick_accounts, record_account_fetch
-from ideaminer.config import Direction
-from ideaminer.core.models import FeedSpec
-from ideaminer.sources.base import SourceUnavailable
-from ideaminer.sources.threads import ThreadsApiBackend, ThreadsSource, ThreadsWebBackend, parse_rendered
-from ideaminer.sources.threads.web import ProfileUnavailable, is_login_page
+from zatravka.storage.accounts import add_account, normalize_username, pick_accounts, record_account_fetch
+from zatravka.config import Direction
+from zatravka.core.models import FeedSpec
+from zatravka.sources.base import SourceUnavailable
+from zatravka.sources.threads import ThreadsApiBackend, ThreadsSource, ThreadsWebBackend, parse_rendered
+from zatravka.sources.threads.web import ProfileUnavailable, is_login_page
 
 
 def post(pk, user, text, ts=1793900000, likes=5, replies=2, code=None):
@@ -130,8 +130,8 @@ def test_accounts_registry(ctx):
 def test_discover_accounts_validates(web_cfg, ctx):
     import json as _json
     from conftest import FakeProvider
-    from ideaminer.storage.directions import sync_directions
-    from ideaminer.pipeline.stages.discover import discover_accounts
+    from zatravka.storage.directions import sync_directions
+    from zatravka.pipeline.stages.discover import discover_accounts
     sync_directions(web_cfg, ctx.db)
     pages = {"real_seller": page([[post(1, "real_seller", "Озон опять поменял правила возвратов")]]),
              "old_blog": page([[post(2, "old_blog", "давний пост", ts=1600000000)]])}
@@ -179,7 +179,7 @@ def post_page(op="alice", code="P1", replies=(), pinned=(), related=()):
 
 
 def test_parse_post_page():
-    from ideaminer.sources.threads.web import parse_post_page, post_page_url
+    from zatravka.sources.threads.web import parse_post_page, post_page_url
     html = post_page(
         replies=[chain(post(201, "bob", "Плачу 5 тысяч в месяц, а толку ноль"), post(202, "alice", "Вот-вот")),
                  chain(post(203, "carol", None)), chain(post(204, "dave", "Есть сервис, но дорогой"))],
@@ -199,10 +199,10 @@ def test_parse_post_page():
 
 
 def test_enrich_takes_replies_and_adopts_related_authors(web_cfg, ctx):
-    from ideaminer.storage.db import loads
-    from ideaminer.core.models import RawPost
-    from ideaminer.storage.posts import insert_posts
-    from ideaminer.pipeline.stages.enrich import run_enrich
+    from zatravka.storage.db import loads
+    from zatravka.core.models import RawPost
+    from zatravka.storage.posts import insert_posts
+    from zatravka.pipeline.stages.enrich import run_enrich
     web_cfg.sources.threads.mode = "web"
     web_cfg.sources.threads.max_accounts_per_direction = 2
     browser = FakeBrowser([post_page(

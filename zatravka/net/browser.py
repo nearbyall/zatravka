@@ -25,8 +25,8 @@ class BrowserError(RuntimeError):
 
 
 def find_browser(explicit: str | None = None) -> str | None:
-    """Chromium from the config, $IDEAMINER_CHROMIUM, PATH or the Playwright cache."""
-    for path in (explicit, os.environ.get("IDEAMINER_CHROMIUM")):
+    """Chromium from the config, $ZATRAVKA_CHROMIUM, PATH or the Playwright cache."""
+    for path in (explicit, os.environ.get("ZATRAVKA_CHROMIUM")):
         if path and Path(path).exists():
             return path
     for name in CANDIDATES:
@@ -46,7 +46,7 @@ class HeadlessBrowser:
         self.path = find_browser(path)
         self.budget_ms = budget_ms
         self.timeout_s = timeout_s
-        self.no_sandbox = no_sandbox or os.environ.get("IDEAMINER_CHROMIUM_NO_SANDBOX") == "1"
+        self.no_sandbox = no_sandbox or os.environ.get("ZATRAVKA_CHROMIUM_NO_SANDBOX") == "1"
 
     @property
     def available(self) -> bool:
@@ -56,7 +56,7 @@ class HeadlessBrowser:
         """The page DOM after scripts ran for budget_ms of virtual time."""
         if not self.path:
             raise BrowserError("Chromium не найден: установите chromium или задайте путь в конфиге")
-        with tempfile.TemporaryDirectory(prefix="ideaminer-chrome-") as profile:
+        with tempfile.TemporaryDirectory(prefix="zatravka-chrome-") as profile:
             try:
                 done = subprocess.run(self._args(url, profile), capture_output=True, timeout=self.timeout_s,
                                       check=False)

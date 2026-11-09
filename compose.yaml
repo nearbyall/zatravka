@@ -1,4 +1,4 @@
-# The scheduled daemon and the web UI share one SQLite database (data/ideaminer.db).
+# The scheduled daemon and the web UI share one SQLite database (data/zatravka.db).
 #   docker compose up -d --build    start both (the daemon spends the LLM budget on schedule)
 #   docker compose up -d web        the UI only, no scheduled runs
 #   docker compose logs -f worker   follow the runs
@@ -6,8 +6,8 @@
 services:
   worker:
     build: .
-    command: ["ideaminer", "daemon"]
-    user: "${IDEAMINER_UID:-1000}:${IDEAMINER_GID:-1000}"
+    command: ["zatravka", "daemon"]
+    user: "${ZATRAVKA_UID:-1000}:${ZATRAVKA_GID:-1000}"
     env_file: .env
     volumes:
       - ./config.yaml:/app/config.yaml:ro
@@ -17,8 +17,8 @@ services:
 
   web:
     build: .
-    command: ["ideaminer", "serve", "--host", "0.0.0.0", "--port", "8610"]
-    user: "${IDEAMINER_UID:-1000}:${IDEAMINER_GID:-1000}"
+    command: ["zatravka", "serve", "--host", "0.0.0.0", "--port", "8610"]
+    user: "${ZATRAVKA_UID:-1000}:${ZATRAVKA_GID:-1000}"
     env_file: .env
     volumes:
       - ./config.yaml:/app/config.yaml:ro

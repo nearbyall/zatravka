@@ -3,8 +3,8 @@ import json
 import pytest
 from conftest import FakeProvider
 
-from ideaminer.llm import BudgetExceeded, LLMError, ProviderDown, extract_json
-from ideaminer.llm.schemas import TriageOut
+from zatravka.llm import BudgetExceeded, LLMError, ProviderDown, extract_json
+from zatravka.llm.schemas import TriageOut
 
 
 def test_extract_json_variants():
@@ -48,7 +48,7 @@ def test_all_providers_fail(ctx):
 
 
 def test_budget_guard(ctx):
-    from ideaminer.llm import Usage
+    from zatravka.llm import Usage
     per_call = ctx.llm._cost("deepseek-flash", Usage(1000, 200, 0))  # the cost of one FakeProvider call
     assert per_call > 0
     ctx.cfg.budget.daily_usd = per_call * 2.5

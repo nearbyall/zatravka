@@ -63,7 +63,7 @@ def cmd_import(args: argparse.Namespace) -> None:
             p.direction = args.direction if args.direction != "inbox" else (p.direction or "inbox")
         print(f"{f}: прочитано {len(posts)}, новых {insert_posts(ctx.db, posts, None)}")
     run_prefilter(ctx)
-    print("Готово. Обработать: ideaminer process")
+    print("Готово. Обработать: zatravka process")
 
 
 def cmd_stats(args: argparse.Namespace) -> None:

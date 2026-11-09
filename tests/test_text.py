@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
-from ideaminer.config import Prefilter, Signal
-from ideaminer.core.prefilter import detect_lang, evaluate
-from ideaminer.core.selection import select_diverse
-from ideaminer.core.text import verify_quote
-from ideaminer.core.similarity import SimIndex, similarity
+from zatravka.config import Prefilter, Signal
+from zatravka.core.prefilter import detect_lang, evaluate
+from zatravka.core.selection import select_diverse
+from zatravka.core.text import verify_quote
+from zatravka.core.similarity import SimIndex, similarity
 
 
 def test_detect_lang():
@@ -61,7 +61,7 @@ def test_select_diverse():
 
 
 def test_dotenv_last_nonempty_wins(tmp_path, monkeypatch):
-    from ideaminer.config import load_dotenv
+    from zatravka.config import load_dotenv
     for k in ("T_EMPTY_THEN_SET", "T_QUOTED", "T_FROM_ENV"):
         monkeypatch.delenv(k, raising=False)
     monkeypatch.setenv("T_FROM_ENV", "outer")
@@ -75,8 +75,8 @@ def test_dotenv_last_nonempty_wins(tmp_path, monkeypatch):
 
 
 def test_explore_overlap():
-    from ideaminer.config import Direction
-    from ideaminer.pipeline.stages.explore import overlapping
+    from zatravka.config import Direction
+    from zatravka.pipeline.stages.explore import overlapping
     dirs = {"ecom": Direction(key="ecom", subreddits=["shopify", "AmazonSeller", "ecommerce", "Etsy"])}
     assert overlapping(["Shopify", "amazonseller", "FulfillmentByAmazon"], dirs, {}) == "ecom"
     assert overlapping(["Beekeeping", "shopify", "gardening"], dirs, {}) is None
@@ -84,7 +84,7 @@ def test_explore_overlap():
 
 
 def test_safe_url_keeps_only_web_links():
-    from ideaminer.web.views import safe_url
+    from zatravka.web.views import safe_url
     assert safe_url("https://www.threads.com/@a/post/B") == "https://www.threads.com/@a/post/B"
     assert safe_url("JaVaScRiPt:alert(1)") == "#"
     assert safe_url("data:text/html,x") == "#"

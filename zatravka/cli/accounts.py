@@ -22,8 +22,8 @@ def cmd_accounts(args: argparse.Namespace) -> None:
 def _list(ctx: Ctx, args: argparse.Namespace) -> None:
     rows = list_accounts(ctx.db, "threads")
     if not rows:
-        print("Аккаунтов нет. Добавить: ideaminer accounts add @имя --direction ключ;"
-              " подобрать ИИ: ideaminer accounts discover --direction ключ")
+        print("Аккаунтов нет. Добавить: zatravka accounts add @имя --direction ключ;"
+              " подобрать ИИ: zatravka accounts discover --direction ключ")
     for r in rows:
         state = "вкл " if r["enabled"] else "выкл"
         last = (r["last_fetched_at"] or "—")[:16].replace("T", " ")

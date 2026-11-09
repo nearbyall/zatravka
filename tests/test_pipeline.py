@@ -6,22 +6,22 @@ import pytest
 from conftest import FIXTURES
 from fastapi.testclient import TestClient
 
-from ideaminer.storage.db import loads
-from ideaminer.storage.idea_queries import query_ideas
-from ideaminer.storage.ideas import rescore_all
-from ideaminer.storage.runs import acquire_lock, release_lock
+from zatravka.storage.db import loads
+from zatravka.storage.idea_queries import query_ideas
+from zatravka.storage.ideas import rescore_all
+from zatravka.storage.runs import acquire_lock, release_lock
 import io
 
 from openpyxl import load_workbook
 
-from ideaminer.export import export_rows, to_csv, to_json, to_markdown, to_xlsx
-from ideaminer.core.taxonomy import resolve_taxonomy
-from ideaminer.pipeline import run_once
-from ideaminer.pipeline.planner import make_plan, pick_directions
-from ideaminer.sources.reddit import RedditSource, parse_rss_comments, parse_rss_posts
-from ideaminer.pipeline.stages.digest import run_digest
-from ideaminer.web.app import create_app
-from ideaminer.web.views import plural
+from zatravka.export import export_rows, to_csv, to_json, to_markdown, to_xlsx
+from zatravka.core.taxonomy import resolve_taxonomy
+from zatravka.pipeline import run_once
+from zatravka.pipeline.planner import make_plan, pick_directions
+from zatravka.sources.reddit import RedditSource, parse_rss_comments, parse_rss_posts
+from zatravka.pipeline.stages.digest import run_digest
+from zatravka.web.app import create_app
+from zatravka.web.views import plural
 
 LISTING = (FIXTURES / "reddit_listing.atom").read_bytes()
 COMMENTS = (FIXTURES / "reddit_comments.atom").read_bytes()
@@ -152,7 +152,7 @@ def test_planner(ctx):
 
 
 def test_pick_directions_prefers_productive(ctx):
-    from ideaminer.config import Direction
+    from zatravka.config import Direction
     dirs = {k: Direction(key=k) for k in ("good", "bad", "new")}
     stats = {"good": {"yield": 0.5}, "bad": {"yield": 0.01}}
     rng = random.Random(0)
@@ -208,7 +208,7 @@ def test_region_focus_and_hints(ctx, fake_reddit):
 
 
 def test_threads_token_refresh(ctx, monkeypatch):
-    import ideaminer.sources.threads.auth as th
+    import zatravka.sources.threads.auth as th
     monkeypatch.setenv("THREADS_ACCESS_TOKEN", "env-token")
     ctx.cfg.secrets.threads_access_token = "env-token"
     calls = []
@@ -220,7 +220,7 @@ def test_threads_token_refresh(ctx, monkeypatch):
 
 
 def test_http_error_hides_tokens():
-    from ideaminer.net.http import HttpError
+    from zatravka.net.http import HttpError
     e = HttpError(400, "https://graph.threads.net/v1.0/me?access_token=SECRET&fields=id", "")
     assert "SECRET" not in str(e) and "access_token=***" in str(e)
 
@@ -237,8 +237,8 @@ def test_boost_regions_raises_odds(ctx):
 
 
 def test_scoped_run_processes_only_its_posts(ctx, fake_reddit):
-    from ideaminer.core.models import RawPost
-    from ideaminer.storage.posts import insert_posts
+    from zatravka.core.models import RawPost
+    from zatravka.storage.posts import insert_posts
     # The queue holds a Reddit backlog with strong signals; a run limited to X must leave it alone
     backlog = [RawPost(platform="reddit", ext_id=f"t3_old{i}", url=f"https://reddit.com/{i}", author="a",
                        title="Is there an app for this? I would pay", body="I hate doing this manually " * 5,
@@ -254,7 +254,7 @@ def test_scoped_run_processes_only_its_posts(ctx, fake_reddit):
         created_at=None, lang="ru", direction=feed.direction, feed=feed.key)]
     ctx.sources["x"].status = lambda: (True, "тест")
     explored = []
-    import ideaminer.pipeline.runner as pl
+    import zatravka.pipeline.runner as pl
     orig = pl.run_explore
     pl.run_explore = lambda c: explored.append(1)
     try:

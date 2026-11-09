@@ -27,7 +27,7 @@ from .stages.explore import prune_directions, run_explore, should_explore
 from .stages.extract import run_extract
 from .stages.triage import run_triage
 
-log = logging.getLogger("ideaminer")
+log = logging.getLogger("zatravka")
 
 LLM_STAGES = (
     ("triage", run_triage),
@@ -45,7 +45,7 @@ def run_once(ctx: Ctx, trigger: str = "manual", *, only_sources: list[str] | Non
     """`only_*` limit both collection and the LLM stages; a limited run never explores
     unless asked to explicitly."""
     if not acquire_lock(ctx.db, trigger):
-        log.warning("другой прогон ещё идёт (снять зависшую блокировку: ideaminer unlock)")
+        log.warning("другой прогон ещё идёт (снять зависшую блокировку: zatravka unlock)")
         return {"status": "busy", "stats": {}, "cost_usd": 0.0}
     try:
         return _run(ctx, trigger, only_sources, only_directions, collect, use_llm, explore)
