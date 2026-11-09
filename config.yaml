@@ -355,6 +355,7 @@ directions:
       - '("I would pay for" OR "I''d pay for" OR "shut up and take my money") (app OR tool OR service) lang:en'
       - '("why is there no app" OR "why isn''t there an app" OR "is there an app that" OR "is there a tool that") lang:en'
       - '("хоть бы кто-нибудь сделал" OR "почему до сих пор нет" OR "есть ли приложение" OR "есть ли сервис" OR "посоветуйте приложение" OR "заплатил бы за") lang:ru'
+      - '("does anyone know an app" OR "anyone know a tool" OR "is there a website that" OR "there has to be a better way") lang:en'
     threads_queries:
       - "I wish there was an app"
       - "someone should build"
@@ -366,21 +367,21 @@ directions:
     name: "SaaS и инди-основатели"
     subreddits: [SaaS, startups, SideProject, indiehackers, microsaas, EntrepreneurRideAlong, nocode]
     reddit_search: ['"biggest pain" customers', '"what tool do you use" for']
-    x_queries: ['("my customers keep asking" OR "users keep asking for") lang:en', '"indie hacker" ("pain point" OR "problem") lang:en']
+    x_queries: ['("my customers keep asking" OR "users keep asking for") lang:en', '"indie hacker" ("pain point" OR "problem") lang:en', '("would you pay for" OR "would anyone pay for" OR "validating an idea") lang:en']
     threads_queries: ["customers keep asking for", "indie hacker pain point"]
 
   small_business_ops:
     name: "Малый бизнес: операционка"
     subreddits: [smallbusiness, sweatystartup, restaurateur, Bookkeeping, consulting, AutoDetailing, Construction]
     reddit_search: ['"how do you keep track"', '"we still use spreadsheets"', '"invoicing" nightmare']
-    x_queries: ['"small business owner" ("so tired of" OR "nightmare") lang:en', '"малый бизнес" (бесит OR неудобно) lang:ru']
+    x_queries: ['"small business owner" ("so tired of" OR "nightmare") lang:en', '"малый бизнес" (бесит OR неудобно) lang:ru', '("my salon" OR "my restaurant" OR "my shop" OR "my clinic") ("so much time on" OR "wish there was" OR "by hand") lang:en']
     threads_queries: ["small business owner struggle", "предприниматель неудобно"]
 
   ecommerce:
     name: "E-commerce и селлеры"
     subreddits: [ecommerce, shopify, FulfillmentByAmazon, EtsySellers, AmazonSeller, Etsy]
     reddit_search: ['"returns" problem seller', '"inventory" manually']
-    x_queries: ['("shopify" OR "etsy") ("wish there was" OR "pain") lang:en', '("селлер" OR "вайлдберриз" OR "озон") (бесит OR "нет сервиса") lang:ru']
+    x_queries: ['("shopify" OR "etsy") ("wish there was" OR "pain") lang:en', '("селлер" OR "вайлдберриз" OR "озон") (бесит OR "нет сервиса") lang:ru', '(dropshipping OR "print on demand" OR "my etsy shop") ("nightmare" OR "wish there was" OR "so tedious") lang:en']
     threads_queries: ["etsy seller problem", "селлер маркетплейс боль"]
 
   gaming_players:
@@ -422,63 +423,63 @@ directions:
     name: "СДВГ, привычки, продуктивность"
     subreddits: [ADHD, productivity, getdisciplined, selfimprovement, Notion, ObsidianMD]
     reddit_search: ['"nothing works for me" planner', '"I keep forgetting"']
-    x_queries: ['(ADHD OR "executive dysfunction") ("app" OR "tool") ("wish" OR "need") lang:en', '(СДВГ OR прокрастинация) (приложение OR сервис) lang:ru']
+    x_queries: ['(ADHD OR "executive dysfunction") ("app" OR "tool") ("wish" OR "need") lang:en', '(СДВГ OR прокрастинация) (приложение OR сервис) lang:ru', '("todo app" OR "to-do list" OR "productivity app") ("doesn''t work for me" OR "gave up on" OR "wish") lang:en']
     threads_queries: ["ADHD app that actually works", "прокрастинация приложение"]
 
   parenting:
     name: "Родители и дети"
     subreddits: [Parenting, Mommit, daddit, NewParents, toddlers, homeschool]
     reddit_search: ['"is there an app" kids', '"mental load" parent']
-    x_queries: ['(parents OR "as a mom" OR "as a dad") ("wish there was" OR "why is there no") lang:en', '(мамы OR родители) ("почему нет" OR "есть ли") lang:ru']
+    x_queries: ['(parents OR "as a mom" OR "as a dad") ("wish there was" OR "why is there no") lang:en', '(мамы OR родители) ("почему нет" OR "есть ли") lang:ru', '("my kids" OR "as a parent") ("keeping track of" OR "is there an app" OR "so many apps") lang:en']
     threads_queries: ["mom life wish there was", "родители есть ли приложение"]
 
   pets:
     name: "Домашние животные"
     subreddits: [dogs, cats, Dogtraining, Pets, Aquariums, Veterinary]
     reddit_search: ['"pet sitter" problem', '"vet bills"']
-    x_queries: ['("my dog" OR "my cat") ("wish there was" OR "is there a") lang:en']
+    x_queries: ['("my dog" OR "my cat") ("wish there was" OR "is there a") lang:en', '("vet bills" OR "pet sitter" OR "dog walker" OR "boarding") ("wish there was" OR "nightmare" OR "is there an app") lang:en']
     threads_queries: ["dog owner problem", "кошка есть ли"]
 
   personal_finance:
     name: "Личные финансы"
     subreddits: [personalfinance, povertyfinance, Frugal, FinancialPlanning]
     reddit_search: ['"budget app" hate', '"subscriptions" cancel forgot']
-    x_queries: ['("budgeting app" OR "budget app") ("hate" OR "wish") lang:en', '(бюджет OR финансы) (приложение) (неудобно OR бесит) lang:ru']
+    x_queries: ['("budgeting app" OR "budget app") ("hate" OR "wish") lang:en', '(бюджет OR финансы) (приложение) (неудобно OR бесит) lang:ru', '(subscription OR subscriptions) ("forgot to cancel" OR "keep forgetting" OR "charged me again") lang:en']
     threads_queries: ["budget app wish", "приложение для бюджета"]
 
   education:
     name: "Образование и языки"
     subreddits: [Teachers, GradSchool, languagelearning, learnprogramming, college]
     reddit_search: ['"teachers" "waste so much time"', '"grading" tool']
-    x_queries: ['(teacher OR teaching) ("waste so much time" OR "wish there was a tool") lang:en', '(учитель OR репетитор) (вручную OR неудобно) lang:ru']
+    x_queries: ['(teacher OR teaching) ("waste so much time" OR "wish there was a tool") lang:en', '(учитель OR репетитор) (вручную OR неудобно) lang:ru', '(grading OR "lesson planning" OR "report cards") ("takes forever" OR "hours every" OR "so tedious") lang:en']
     threads_queries: ["teacher burnout paperwork", "учитель бумажная работа"]
 
   dev_tools:
     name: "Разработчики и IT"
     subreddits: [programming, webdev, devops, ExperiencedDevs, sysadmin, selfhosted]
     reddit_search: ['"why is there no tool"', '"I built a script" because']
-    x_queries: ['("dev tool" OR devtools OR "developer experience") ("wish" OR "annoying") lang:en']
+    x_queries: ['("dev tool" OR devtools OR "developer experience") ("wish" OR "annoying") lang:en', '("I hate" OR "so annoying" OR "wasted hours") (kubernetes OR terraform OR "CI pipeline" OR yaml) lang:en']
     threads_queries: ["developer tool wish", "devops pain"]
 
   ai_builders:
     name: "ИИ: строители и пользователи"
     subreddits: [LocalLLaMA, ChatGPT, ClaudeAI, artificial, automation]
     reddit_search: ['"workflow" "still manual"', '"wish ChatGPT could"']
-    x_queries: ['("AI agent" OR "LLM") ("wish it could" OR "still can''t") lang:en', '(нейросеть OR ИИ) ("хоть бы" OR "почему нет") lang:ru']
+    x_queries: ['("AI agent" OR "LLM") ("wish it could" OR "still can''t") lang:en', '(нейросеть OR ИИ) ("хоть бы" OR "почему нет") lang:ru', '("wish AI could" OR "why can''t AI" OR "I''d pay for an AI that") lang:en']
     threads_queries: ["wish AI could", "нейросеть которая бы"]
 
   marketing_creators:
     name: "Маркетинг и креаторы"
     subreddits: [marketing, socialmedia, NewTubers, SEO, content_marketing, PartneredYoutube, podcasting, Twitch]
     reddit_search: ['"repurpose" content manually', '"sponsors" small creator']
-    x_queries: ['(creator OR youtuber OR "content creator") ("wish there was" OR "so tedious") lang:en', '(блогер OR SMM) (рутина OR вручную) lang:ru']
+    x_queries: ['(creator OR youtuber OR "content creator") ("wish there was" OR "so tedious") lang:en', '(блогер OR SMM) (рутина OR вручную) lang:ru', '("cross-posting" OR "repurposing content" OR "scheduling posts") ("tedious" OR "hate" OR "wish") lang:en']
     threads_queries: ["content creator struggle", "smm рутина"]
 
   real_estate_home:
     name: "Дом, ремонт, недвижимость"
     subreddits: [RealEstate, Landlord, HomeImprovement, DIY, homeowners, InteriorDesign]
     reddit_search: ['"contractor" ghosted', '"tenant" app']
-    x_queries: ['(landlord OR homeowner OR renovation) ("nightmare" OR "wish there was") lang:en', '(ремонт OR арендодатель) (кошмар OR "нет нормального") lang:ru']
+    x_queries: ['(landlord OR homeowner OR renovation) ("nightmare" OR "wish there was") lang:en', '(ремонт OR арендодатель) (кошмар OR "нет нормального") lang:ru', '(tenant OR renter OR "moving apartments" OR "my landlord") ("nightmare" OR "is there an app" OR "wish there was") lang:en']
     threads_queries: ["renovation nightmare", "ремонт кошмар"]
 
   food:
@@ -492,7 +493,7 @@ directions:
     name: "Путешествия и номады"
     subreddits: [travel, solotravel, digitalnomad, onebag, expats]
     reddit_search: ['"visa" confusing', '"travel app" wish']
-    x_queries: ['("digital nomad" OR travel) ("wish there was" OR "nightmare") lang:en', '(релокация OR эмиграция) ("нет сервиса" OR сложно) lang:ru']
+    x_queries: ['("digital nomad" OR travel) ("wish there was" OR "nightmare") lang:en', '(релокация OR эмиграция) ("нет сервиса" OR сложно) lang:ru', '("planning a trip" OR itinerary OR "group trip") ("so tedious" OR "is there an app" OR "wish there was") lang:en']
     threads_queries: ["digital nomad problem", "релокация сложности"]
 
   auto_mobility:
@@ -506,14 +507,14 @@ directions:
     name: "Работа, найм, фриланс"
     subreddits: [recruitinghell, humanresources, jobs, careerguidance, freelance]
     reddit_search: ['"applicant tracking"', '"freelance" invoice late']
-    x_queries: ['(recruiter OR "job search" OR freelancer) ("so broken" OR "wish there was") lang:en', '(фриланс OR поиск работы) (бесит OR сломан) lang:ru']
+    x_queries: ['(recruiter OR "job search" OR freelancer) ("so broken" OR "wish there was") lang:en', '(фриланс OR поиск работы) (бесит OR сломан) lang:ru', '("job applications" OR "job hunting" OR "cover letters") ("soul crushing" OR "so tedious" OR "wish there was") lang:en']
     threads_queries: ["job search broken", "фриланс проблема"]
 
   money_admin:
     name: "Бухгалтерия, налоги, документы"
     subreddits: [Accounting, tax, Insurance, Bookkeeping]
     reddit_search: ['"month end" manual', '"receipts" organize']
-    x_queries: ['(accountant OR bookkeeping OR "tax season") ("so manual" OR "wish") lang:en', '(бухгалтер OR налоги OR декларация) (вручную OR ад) lang:ru']
+    x_queries: ['(accountant OR bookkeeping OR "tax season") ("so manual" OR "wish") lang:en', '(бухгалтер OR налоги OR декларация) (вручную OR ад) lang:ru', '("receipts" OR "invoices" OR "expense report") ("so tedious" OR "by hand" OR "manually") lang:en']
     threads_queries: ["tax season nightmare", "бухгалтерия вручную"]
 
   trades_industry:
@@ -534,7 +535,7 @@ directions:
     name: "Пожилые и уход"
     subreddits: [AgingParents, caregivers, dementia, AskOldPeople]
     reddit_search: ['"aging parents" overwhelmed', '"caregiver" burnout']
-    x_queries: ['("aging parents" OR caregiver) ("overwhelmed" OR "wish there was") lang:en', '(пожилые родители OR сиделка) (сложно OR "как найти") lang:ru']
+    x_queries: ['("aging parents" OR caregiver) ("overwhelmed" OR "wish there was") lang:en', '(пожилые родители OR сиделка) (сложно OR "как найти") lang:ru', '("my mom" OR "my dad" OR "elderly parent") (medications OR "doctor appointments") ("keep track" OR "overwhelmed") lang:en']
     threads_queries: ["aging parents overwhelmed", "уход за пожилыми"]
 
   hobbies_crafts:
@@ -569,7 +570,7 @@ directions:
     name: "Медицина изнутри (врачи, медсёстры, фарма)"
     subreddits: [nursing, medicine, pharmacy, Veterinary, physicaltherapy]
     reddit_search: ['"charting" takes forever', '"EHR" terrible']
-    x_queries: ['(nurse OR physician OR pharmacist) ("charting" OR "paperwork") ("hate" OR "hours") lang:en']
+    x_queries: ['(nurse OR physician OR pharmacist) ("charting" OR "paperwork") ("hate" OR "hours") lang:en', '("prior authorization" OR "insurance denial" OR "claim denied") ("nightmare" OR "hours" OR "so broken") lang:en']
     threads_queries: ["nurse charting burnout", "врач бумажная работа"]
 
   # Regional directions: the region field tells the classifier where the signal comes from
