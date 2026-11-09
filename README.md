@@ -1,275 +1,287 @@
 # zatravka
 
-Автоматический поиск продуктовых и бизнес-идей в лентах Reddit, X и Threads. Система сама выбирает,
-что читать, отсеивает мусор, отдаёт перспективные посты ИИ и раскладывает найденные идеи по
-полочкам: B2B/B2C, сфера (игры, косметика, бизнес…), цифровой/физический продукт, модель
-монетизации. Ищет не только явные запросы («хоть бы кто-нибудь сделал…»), но и неочевидные идеи,
-которые выводятся из боли, обходных решений и трендов.
+[Русский](README.ru.md) | **English**
+
+Automated discovery of product and business ideas in Reddit, X and Threads feeds. The system
+decides what to read, filters out noise, hands promising posts to an LLM and sorts the ideas it
+finds: B2B/B2C, sphere (games, cosmetics, business…), digital or physical product, monetization
+model. It looks not only for explicit requests ("I wish someone would build…") but also for
+non-obvious ideas inferred from pain points, workarounds and trends.
 
 ```
- ленты ─▶ сбор ─▶ префильтр ─▶ триаж ИИ ─▶ комментарии ─▶ извлечение идей ─▶ классификация ─▶ склейка дублей
-  ▲                (язык, спам,   (0–10, пачками)  (к лучшим     (явные, неявные,    (рынок, сфера,     (кластеры +
-  │                 сигнальные                      постам)       неочевидные)        тип, оценки)       упоминания)
-  │                 фразы)
-  └──── планировщик направлений ◀── отдача направлений ◀── ИИ-исследователь предлагает новые направления
+ feeds ─▶ collect ─▶ prefilter ─▶ LLM triage ─▶ comments ─▶ idea extraction ─▶ classification ─▶ dedup
+  ▲                  (language,    (0–10, in      (for the     (explicit,          (market, sphere,   (clusters +
+  │                   spam, signal  batches)       best posts)  implicit,           type, scores)      mentions)
+  │                   phrases)                                  lateral)
+  └──── direction planner ◀── direction yield ◀── the LLM explorer proposes new directions
 ```
 
-## Быстрый старт
+The web UI and CLI messages are in Russian. Ideas are written in `output_language` (Russian by
+default); evidence quotes stay in the original language.
+
+## Quick start
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-cp .env.example .env            # ключи; уже заполнен ключами DeepSeek/Replicate из соседних проектов
-.venv/bin/zatravka init        # база + проверка источников, ключей, баланса
-.venv/bin/zatravka run         # один полный прогон (с публичным RSS Reddit — 10–20 минут)
-.venv/bin/zatravka serve       # интерфейс на http://127.0.0.1:8610
+cp .env.example .env           # add keys: at least DeepSeek or Replicate
+.venv/bin/zatravka init        # database + check of sources, keys and balance
+.venv/bin/zatravka run         # one full run (10–20 minutes with public Reddit RSS)
+.venv/bin/zatravka serve       # UI at http://127.0.0.1:8610
 ```
 
-Работать по расписанию: `zatravka daemon` или в Docker:
+Scheduled runs: `zatravka daemon`, or Docker:
 
 ```bash
-docker compose up -d web          # только интерфейс на 127.0.0.1:8610, ИИ-бюджет не тратит
-docker compose up -d --build      # интерфейс + worker: прогоны по расписанию (тратит бюджет)
+docker compose up -d web          # UI only at 127.0.0.1:8610, spends no LLM budget
+docker compose up -d --build      # UI + worker: scheduled runs (spends the budget)
 docker compose logs -f worker
-docker compose down               # остановить всё; данные остаются в ./data
+docker compose down               # stop everything; data stays in ./data
 ```
 
-## Источники и доступ
+## Sources and access
 
-Площадки читаются только легальными путями: официальные API и публичные ленты. Обходить
-блокировки система не пытается. HTTP-клиент представляется честным User-Agent, читает
-`x-ratelimit-*` и `Retry-After` и сам ждёт, пока лимит сбросится.
+Platforms are read only through legitimate channels: official APIs and public feeds. The system
+never tries to get around blocks. The HTTP client sends an honest User-Agent, reads
+`x-ratelimit-*` and `Retry-After` and waits for the limit to reset on its own.
 
-| Источник | Без ключей | С ключами | Что нужно |
+| Source | Without keys | With keys | What you need |
 |---|---|---|---|
-| **Reddit** | ✓ публичный RSS (около 1 запроса в минуту, без рейтинга постов) | OAuth API: 100 запросов в минуту, рейтинг, число комментариев, NSFW-флаг | `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` (приложение типа *script* на reddit.com/prefs/apps; новым приложениям Reddit может потребоваться одобрение доступа к API) |
-| **X** | ✗ | API v2, поиск за последние 7 дней | `X_BEARER_TOKEN` (developer.x.com). Чтение платное, поэтому `max_results` маленький |
-| **Threads** | ✓ веб-режим: публичные профили из списка аккаунтов и первые ответы под постами (поиска по словам без входа нет) | Threads API: `keyword_search`, профили через `profile_posts` | `THREADS_ACCESS_TOKEN` с правами `threads_basic` и `threads_keyword_search`. Пока приложение не прошло ревью Meta, поиск находит только ваши собственные посты |
-| **RSS** | ✓ любые RSS/Atom-ленты | — | `sources.rss.feeds` в конфиге: например, свой RSSHub для X/Threads |
-| **Файлы** | ✓ JSON, JSONL, CSV из `data/inbox/` | — | выгрузки сторонних инструментов. Платформа берётся из поля `platform` или из префикса имени файла (`x_*.json`, `threads_*.csv`) |
+| **Reddit** | ✓ public RSS (about 1 request per minute, no post scores) | OAuth API: 100 requests per minute, scores, comment counts, NSFW flag | `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` (a *script* app at reddit.com/prefs/apps; Reddit may require new apps to be approved for API access) |
+| **X** | ✗ | API v2, search over the last 7 days | `X_BEARER_TOKEN` (developer.x.com). Reads are paid, so `max_results` is small |
+| **Threads** | ✓ web mode: public profiles from the account list and the first replies under posts (no keyword search without login) | Threads API: `keyword_search`, profiles via `profile_posts` | `THREADS_ACCESS_TOKEN` with `threads_basic` and `threads_keyword_search`. Until the app passes Meta review, search finds only your own posts |
+| **RSS** | ✓ any RSS/Atom feeds | — | `sources.rss.feeds` in the config, e.g. your own RSSHub for X/Threads |
+| **Files** | ✓ JSON, JSONL, CSV from `data/inbox/` | — | exports from third-party tools. The platform comes from the `platform` field or the file name prefix (`x_*.json`, `threads_*.csv`) |
 
-Из коробки работают Reddit через RSS и Threads в веб-режиме. X и официальный API Threads
-включаются сами, как только в `.env` появляется токен (`enabled: auto`). Проверить доступ:
+Reddit via RSS and Threads in web mode work out of the box. X and the official Threads API turn
+on by themselves once a token appears in `.env` (`enabled: auto`). Check access with
 `zatravka doctor`.
 
-### Threads без токена: веб-режим
+### Threads without a token: web mode
 
-Без входа Threads показывает публичные профили, но не поиск. Поэтому веб-режим читает список
-аккаунтов из реестра в базе. Страницу открывает обычный headless Chromium: без входа, без
-маскировки, с паузой 20 секунд между страницами. Посты берутся из JSON, который страница сама
-в себя кладёт, а не из вёрстки. Если Threads трижды подряд покажет вход вместо проверенного
-профиля, режим выключается до конца прогона, обходов нет. Автоматический сбор противоречит
-правилам Meta: режим выключается флагом `sources.threads.web.enabled`. Как только появится токен,
-источник сам переключится на официальный API (`sources.threads.mode: auto`).
+Logged out, Threads shows public profiles but not search, so web mode reads the account list
+from the registry in the database. Pages are opened by plain headless Chromium: no login, no
+disguise, a 20-second pause between pages. Posts are taken from the JSON the page embeds in
+itself, not from the markup. If Threads shows a login wall instead of a verified profile three
+times in a row, the mode turns off until the end of the run; there are no workarounds. Automated
+collection is against Meta's terms: turn the mode off with `sources.threads.web.enabled`. Once a
+token appears, the source switches to the official API by itself (`sources.threads.mode: auto`).
 
 ```bash
-zatravka accounts add @имя1 @имя2 --direction region_cis   # добавить аккаунты к направлению
-zatravka accounts check @имя                               # открыть профиль и показать, что видно
-zatravka accounts discover --direction cis_sellers --count 12   # ИИ предлагает, браузер проверяет
+zatravka accounts add @name1 @name2 --direction region_cis   # add accounts to a direction
+zatravka accounts check @name                                # open the profile and show what is visible
+zatravka accounts discover --direction cis_sellers --count 12   # the LLM suggests, the browser verifies
 zatravka accounts list
 ```
 
-ИИ часто выдумывает имена: из 12 кандидатов обычно проходит 1–3, остальные отсеиваются проверкой.
-Надёжнее растит реестр сам Threads. Для лучших постов прогона (`comments_for_top_posts`) веб-режим
-открывает страницу поста. Оттуда берутся первые ответы (без входа видно до 5–8) и пять «похожих
-тредов»: Threads подбирает их по теме и языку. Авторы похожих тредов добавляются к направлению
-поста с пометкой «из похожих тредов», пока у направления меньше `max_accounts_per_direction`
-включённых аккаунтов. Выключить: `sources.threads.related_authors: false`.
-Аккаунт, который трижды подряд оказался пустым, выключается сам. За прогон читается
-`accounts_per_direction` аккаунтов направления (по кругу) и `global_accounts_per_run` общих.
-Chromium ищется в PATH и кэше Playwright, в Docker-образ он уже установлен.
+The LLM often invents handles: of 12 candidates usually 1–3 pass and the rest fail verification.
+Threads itself grows the registry more reliably. For the best posts of a run
+(`comments_for_top_posts`) web mode opens the post page. It takes the first replies from there
+(up to 5–8 are visible logged out) and five "related threads" that Threads picks by topic and
+language. Authors of related threads join the post's direction, marked as found through related
+threads, while the direction has fewer than `max_accounts_per_direction` enabled accounts. Turn
+it off with `sources.threads.related_authors: false`. An account that comes back empty three
+times in a row is disabled automatically. A run reads `accounts_per_direction` accounts of each
+direction (round robin) and `global_accounts_per_run` shared ones. Chromium is looked up in PATH
+and the Playwright cache; the Docker image already includes it.
 
-### Подключить X
+### Connecting X
 
-1. Зайдите на developer.x.com, создайте Project и App внутри него.
-2. Поиск постов (`/2/tweets/search/recent`) доступен только на платном доступе: оплата за
-   запросы или тариф. Бесплатный уровень поиск не включает. Актуальные цены — в кабинете.
-3. App → *Keys and tokens* → *Bearer Token* → *Generate*. Добавьте в `.env`:
+1. Go to developer.x.com and create a Project with an App inside it.
+2. Post search (`/2/tweets/search/recent`) needs paid access: pay-per-use or a plan. The free
+   tier does not include search. Current prices are in the developer console.
+3. App → *Keys and tokens* → *Bearer Token* → *Generate*. Add it to `.env`:
    `X_BEARER_TOKEN=...`
-4. `zatravka doctor` проверит токен и покажет, сколько постов прочитано из лимита проекта.
-5. Расход регулируется в `config.yaml`: `sources.x.max_results` (10–100 постов на запрос) и
-   `queries_per_direction`. Прогон читает примерно «направлений × запросов × max_results»
-   постов, по умолчанию 6 × 1 × 10 = 60, то есть ≈ $0.30 за прогон при $0.005 за пост.
-   Запросы X лежат в `directions.*.x_queries`.
+4. `zatravka doctor` checks the token and shows how many posts were read out of the project cap.
+5. Spending is controlled in `config.yaml`: `sources.x.max_results` (10–100 posts per query),
+   `queries_per_direction` and `daily_read_limit`. A run reads about "directions × queries ×
+   max_results" posts, by default 6 × 1 × 10 = 60, which is ≈ $0.30 per run at $0.005 per post.
+   X queries live in `directions.*.x_queries`.
 
-### Подключить Threads
+### Connecting Threads
 
-1. developers.facebook.com → *My Apps* → *Create app* → сценарий *Access the Threads API*.
-2. В правах сценария включите `threads_basic` и `threads_keyword_search`. Для чтения чужих
-   публичных профилей из `sources.threads.accounts` ещё нужен `threads_profile_discovery`.
-3. *App roles → Roles* → добавьте свой аккаунт Threads как *Threads Tester*. Затем примите
-   приглашение в Threads: *Настройки → Аккаунт → Разрешения веб-сайтов → Приглашения*.
-4. Получите короткий токен: в кабинете приложения, сценарий Threads → генератор токена
-   пользователя (или OAuth `threads.net/oauth/authorize`).
-5. Обменяйте его на долгий (60 дней) и сохраните в `.env` одной командой:
+1. developers.facebook.com → *My Apps* → *Create app* → the *Access the Threads API* use case.
+2. In the use case permissions enable `threads_basic` and `threads_keyword_search`. Reading
+   other people's public profiles from `sources.threads.accounts` also needs
+   `threads_profile_discovery`.
+3. *App roles → Roles* → add your Threads account as a *Threads Tester*. Then accept the
+   invitation in Threads: *Settings → Account → Website permissions → Invites*.
+4. Get a short-lived token: in the app dashboard, Threads use case → user token generator (or
+   OAuth via `threads.net/oauth/authorize`).
+5. Exchange it for a long-lived one (60 days) and save it to `.env` with one command:
    ```bash
-   zatravka threads-token <короткий_токен> --app-secret <секрет_приложения> --save
+   zatravka threads-token <short_token> --app-secret <app_secret> --save
    ```
-   Секрет приложения: *App settings → Basic → App secret* (у сценария Threads свой секрет).
-   Дальше токен продлевает сам zatravka: раз в три дня, при каждом прогоне.
-6. Ограничение Meta: пока приложение не прошло App Review на `threads_keyword_search`, поиск
-   находит только посты вашего собственного аккаунта. Для настоящего исследования подайте
-   приложение на ревью (понадобятся политика конфиденциальности и запись экрана).
+   The app secret is in *App settings → Basic → App secret* (the Threads use case has its own).
+   After that zatravka refreshes the token itself: every three days, on each run.
+6. Meta's limitation: until the app passes App Review for `threads_keyword_search`, search finds
+   only posts of your own account. For real research submit the app for review (you will need
+   a privacy policy and a screen recording).
 
-Пока ключей нет, X и Threads можно подключить выгрузками. Положите JSON или CSV в `data/inbox/`
-с префиксом площадки (`x_2026-11.json`, `threads_export.csv`), и следующий прогон их разберёт.
-Подойдут выгрузки инструментов, которыми вы пользуетесь легально.
+Until you have keys, X and Threads can be fed with exports. Put JSON or CSV into `data/inbox/`
+with a platform prefix (`x_2026-11.json`, `threads_export.csv`) and the next run will process
+them. Use exports from tools you are allowed to use.
 
-## ИИ
+## LLM
 
-- **DeepSeek** (`deepseek-flash`) — основной провайдер: OpenAI-совместимый API, JSON-режим,
-  рассуждения выключены (быстро и дёшево).
-- **Replicate** (`openai/gpt-5-mini`) — запасной: включается, если DeepSeek недоступен
-  (нет ключа, кончились деньги, 401/402).
-- Каждый ответ проверяется pydantic-схемой. При ошибке модели один раз показывается её же ошибка.
-- Каждый вызов пишется в `llm_calls` с токенами и стоимостью. Бюджет на день и на прогон
-  (`budget`) жёсткий: при исчерпании стадия останавливается, а очередь доедает следующий прогон.
-- Реальный расход (сверен по списаниям с баланса): полный прогон — 120 постов на триаж,
-  25 на извлечение, около 80 идей — стоит ≈ $0.09 (≈ 0.65 CNY).
+- **DeepSeek** (`deepseek-flash`) is the main provider: OpenAI-compatible API, JSON mode,
+  reasoning off (fast and cheap).
+- **Replicate** (`openai/gpt-5-mini`) is the fallback: it kicks in when DeepSeek is unavailable
+  (no key, out of credit, 401/402).
+- Every response is validated against a pydantic schema. On a model error the model is shown
+  its own error once.
+- Every call is logged to `llm_calls` with tokens and cost. The daily and per-run budgets
+  (`budget`) are hard: when one runs out the stage stops and the next run picks up the queue.
+- Real spending (checked against balance deductions): a full run with 120 posts in triage,
+  25 in extraction and about 80 ideas costs ≈ $0.09 (≈ 0.65 CNY).
 
-> ⚠️ Ключ DeepSeek в `.env` скопирован из `clients-demo` и общий с demo-проектами
-> (clients, new-demo, zakupki, z-reports), а на балансе осталось около 3.6 CNY. Дневной лимит
-> по умолчанию ($0.15) пропускает 1–2 прогона в сутки. Для постоянной работы заведите отдельный
-> ключ и поднимите `budget.daily_usd`.
+> The default daily limit ($0.15) allows 1–2 runs a day. Raise `budget.daily_usd` for
+> scheduled runs.
 
-## Как ищутся идеи
+## How ideas are found
 
-1. **Планировщик** берёт обязательные направления (`planner.core_directions`) и ещё
-   `random_directions` случайных. Направления с лучшей отдачей выпадают чаще. Отдача — сумма
-   превышений баллов идей над 5 на оценённый пост, со сглаживанием, а доля `epsilon` — чистый случай. Плюс несколько случайных
-   сабреддитов из `wildcard_pool` и случайный тип ленты (top за неделю или месяц, hot, new).
-2. **Префильтр** (без ИИ): язык, длина, возраст, спам-шаблоны. Сигнальные фразы на английском
-   и русском («I wish there was», «would pay for», «есть ли сервис», «вручную»…) поднимают пост
-   в очереди. 15% очереди триажа — случайные посты без сигналов: неочевидные идеи часто там.
-3. **Триаж ИИ** пачками по 20 постов: оценка 0–10, сколько материала для идеи, плюс сигналы
-   (wish, pain, workaround, spending, trend, profession, niche).
-4. **Комментарии** к лучшим постам: «у меня то же самое», «плачу за X, но…».
-5. **Извлечение**: до 4 идей на пост, трёх типов: *явная* (прямо просят), *неявная* (следует
-   из боли), *неочевидная* (латеральные приёмы: «кирки и лопаты», B2B-версия потребительской
-   боли, перенос физическое↔цифровое, смежная аудитория с деньгами, вторичный эффект тренда,
-   инверсия). У каждой идеи есть дословная цитата-доказательство. Код проверяет, что цитата
-   правда есть в посте, а непроверенные помечает в интерфейсе.
-6. **Классификация** по таксономии из конфига: рынок, основная и дополнительные сферы, тип
-   продукта, модель монетизации, теги и шесть оценок (спрос, деньги, новизна, реализуемость,
-   свободная ниша, острота). Итоговый балл считает код по весам `scoring.weights`, а не модель.
-7. **Склейка дублей**: лексический индекс (TF-IDF по триграммам, терпим к русским словоформам)
-   находит кандидатов, спорные пары решает ИИ-судья. Повторяющаяся идея становится кластером,
-   а число упоминаний поднимает её балл.
-8. **ИИ-исследователь** раз в `explore.every_n_runs` прогонов смотрит на статистику и предлагает
-   новые направления: одно углубляет самое урожайное, остальные уходят в неочевидные ниши
-   по случайным затравкам. Сабреддиты проверяются на существование. Слабые ИИ-направления
-   со временем отключаются сами.
+1. The **planner** takes the mandatory directions (`planner.core_directions`) plus
+   `random_directions` random ones. Directions with better yield come up more often. Yield is
+   the sum of idea scores above 5 per evaluated post, smoothed, and an `epsilon` share is pure
+   chance. On top of that come a few random subreddits from `wildcard_pool` and a random feed
+   type (top of the week or month, hot, new).
+2. The **prefilter** (no LLM): language, length, age, spam patterns. Signal phrases in English
+   and Russian ("I wish there was", "would pay for", "есть ли сервис", "вручную"…) push a post
+   up the queue. 15% of the triage queue is random posts without signals: non-obvious ideas
+   often hide there.
+3. **LLM triage** in batches of 20 posts: a 0–10 score for how much idea material a post has,
+   plus signals (wish, pain, workaround, spending, trend, profession, niche).
+4. **Comments** for the best posts: "same here", "I pay for X, but…".
+5. **Extraction**: up to 4 ideas per post, of three types: *explicit* (asked for directly),
+   *implicit* (follows from the pain), *lateral* (lateral moves: "picks and shovels", a B2B
+   version of a consumer pain, physical↔digital transfer, an adjacent audience with money,
+   a second-order effect of a trend, inversion). Every idea has a verbatim evidence quote. The
+   code checks that the quote really is in the post and flags unverified ones in the UI.
+6. **Classification** against the taxonomy from the config: market, main and secondary spheres,
+   product type, monetization model, tags and six scores (demand, money, novelty, feasibility,
+   open niche, urgency). The final score is computed by code from `scoring.weights`, not by the
+   model.
+7. **Dedup**: a lexical index (TF-IDF over trigrams, tolerant to Russian word forms) finds
+   candidates and an LLM judge decides the borderline pairs. A recurring idea becomes a cluster,
+   and its mention count raises its score.
+8. The **LLM explorer** looks at the statistics every `explore.every_n_runs` runs and proposes
+   new directions: one deepens the most productive direction, the rest go into non-obvious
+   niches from random seeds. Subreddits are checked for existence. Weak LLM directions are
+   disabled automatically over time.
 
-## Регионы
+## Regions
 
-Каждой идее ИИ ставит:
-- **регионы запуска** — 1–3 рынка, где идею можно запустить без принципиальной переделки:
-  СНГ, ЕС, Северная Америка, Латинская Америка, Восточная Европа вне ЕС, Ближний Восток,
-  Африка, Южная Азия, Восточная Азия, Океания или «глобально». Если продукт работает где-то,
-  а в другом регионе его ещё нет, ИИ добавляет и этот регион: перенос модели — тоже возможность;
-- **откуда сигнал** — регион, где замечена боль. Подсказки для ИИ: язык поста, сообщество,
-  упомянутые сервисы, законы и валюты, регион направления.
+The LLM gives every idea:
+- **launch regions**: 1–3 markets where the idea can launch without a fundamental redesign:
+  CIS, EU, North America, Latin America, Eastern Europe outside the EU, Middle East, Africa,
+  South Asia, East Asia, Oceania or "global". If a product works somewhere but is missing in
+  another region, the LLM adds that region too: transferring a model is also an opportunity;
+- **signal origin**: the region where the pain was seen. Hints for the LLM: post language,
+  community, mentioned services, laws and currencies, the direction's region.
 
-Фильтр «Регион запуска» есть в интерфейсе (с галочкой «и глобальные»), в CLI (`--region cis`,
-`--no-global`, `--origin north_america`) и в Excel-выгрузке (колонки плюс лист «Сфера × регион»).
-Карта на главной переключается: по рынку, по региону, по типу продукта.
+The launch region filter is in the UI (with an "include global" checkbox), in the CLI
+(`--region cis`, `--no-global`, `--origin north_america`) and in the Excel export (columns plus
+a "sphere × region" sheet). The map on the main page switches between market, region and
+product type.
 
-Сбор тоже можно направить на регион. В `config.yaml` есть региональные направления
-(`region_cis`, `region_eu`, `region_latam`, … с русско-, испано- и португалоязычными
-запросами) и шесть тематических направлений СНГ (`cis_sellers`, `cis_smb_admin`,
-`cis_home_services`, `cis_parents_edu`, `cis_daily_services`, `cis_freelance_it`) с запросами X
-на лексике жалоб. Два рычага:
-- `planner.boost_regions: {cis: 3}` (включено): направления СНГ выпадают втрое чаще, другие
-  регионы остаются в игре;
-- `planner.regions: [cis, eu]`: жёсткий фокус — направления этих регионов идут в каждый прогон,
-  а направления других регионов не читаются. Список регионов — в
-`taxonomy.regions`. После его правки идеи переразмечаются автоматически в следующих прогонах
-(или сразу: `zatravka reclassify`).
+Collection can be steered to a region too. `config.yaml` has regional directions (`region_cis`,
+`region_eu`, `region_latam`, … with Russian, Spanish and Portuguese queries) and six CIS topic
+directions (`cis_sellers`, `cis_smb_admin`, `cis_home_services`, `cis_parents_edu`,
+`cis_daily_services`, `cis_freelance_it`) with X queries built on complaint vocabulary. Two
+levers:
+- `planner.boost_regions: {cis: 3}` (on by default): CIS directions come up three times as
+  often, other regions stay in play;
+- `planner.regions: [cis, eu]`: a hard focus. These regions' directions run every time and
+  other regions' directions are not read.
 
-## Настройка
+The region list is in `taxonomy.regions`. After editing it ideas are relabeled automatically
+over the next runs (or right away: `zatravka reclassify`).
 
-Всё живёт в `config.yaml`. Главное:
+## Configuration
 
-- `directions` — направления: сабреддиты, поиск по Reddit, запросы X (синтаксис API v2),
-  ключевые слова Threads. Добавили — подхватится на следующем прогоне. Демон перечитывает
-  конфиг каждый цикл.
-- `taxonomy` — рынки, сферы, типы продукта, модели. После правки выполните
-  `zatravka reclassify`, и ИИ переразметит идеи под новую таксономию.
-- `scoring.weights` — веса оценок. После правки — `zatravka rescore` (без ИИ).
-- `prefilter.signals` и `spam_patterns` — регулярки с весами.
-- `triage.threshold`, `random_share`, `extract.max_posts_per_run` — строгость и объём.
-- `budget`, `schedule` — деньги и расписание.
-- Промпты лежат в `zatravka/prompts/*.md`. Их можно править на месте или указать свою папку
-  в `storage.prompts_dir` (переопределять можно не все файлы, а только нужные).
+Everything lives in `config.yaml`. The main parts:
 
-Разовые переопределения без правки файла: `zatravka --set triage.max_posts_per_run=30 run`.
+- `directions`: subreddits, Reddit search, X queries (API v2 syntax), Threads keywords. A new
+  direction is picked up on the next run. The daemon rereads the config every cycle.
+- `taxonomy`: markets, spheres, product types, models. After editing run
+  `zatravka reclassify` and the LLM relabels ideas for the new taxonomy.
+- `scoring.weights`: score weights. After editing run `zatravka rescore` (no LLM).
+- `prefilter.signals` and `spam_patterns`: weighted regular expressions.
+- `triage.threshold`, `random_share`, `extract.max_posts_per_run`: strictness and volume.
+- `budget`, `schedule`: money and timing.
+- Prompts live in `zatravka/prompts/*.md`. Edit them in place or point `storage.prompts_dir` at
+  your own folder (you can override only the files you need).
 
-## Команды
+One-off overrides without editing the file: `zatravka --set triage.max_posts_per_run=30 run`.
+
+## Commands
 
 ```
-zatravka init                      база, проверка окружения
-zatravka doctor                    источники, ключи, баланс DeepSeek, расход за сегодня
+zatravka init                      database, environment check
+zatravka doctor                    sources, keys, DeepSeek balance, today's spending
 zatravka run [--directions a,b] [--sources reddit] [--no-llm] [--explore] [--digest] [--seed N]
-zatravka collect                   только сбор, без ИИ
-zatravka process                   ИИ-обработка накопленной очереди без сбора
-zatravka explore                   ИИ предлагает новые направления прямо сейчас
+zatravka collect                   collection only, no LLM
+zatravka process                   LLM processing of the queued posts, no collection
+zatravka explore                   the LLM proposes new directions right now
 zatravka ideas [--market B2B] [--sphere games] [--nature physical] [--insight lateral] [--region cis]
-                [--platform reddit] [--q текст] [--min-score 6] [--days 7] [--sort score|new|mentions|novelty|demand|feasibility]
-zatravka export [--format xlsx|csv|json|md] [те же фильтры] [--out файл]   по умолчанию Excel
-zatravka digest [--days 1] [--send]   Markdown-дайджест в data/digests (+ Telegram)
-zatravka import файл.json [--direction ключ]
-zatravka reclassify [--all]        переразметка после смены таксономии
-zatravka rescore                   пересчёт баллов после смены весов
-zatravka stats                     статистика базы, направлений, расходов
-zatravka daemon                    прогоны по расписанию + ежедневный дайджест
-zatravka serve [--host --port]     веб-интерфейс
-zatravka unlock                    снять зависшую блокировку прогона
-zatravka threads-token КОРОТКИЙ --app-secret СЕКРЕТ [--save]   долгий токен Threads
-zatravka accounts list|add|remove|check|discover [@имя…] [--direction ключ] [--count N]
+               [--platform reddit] [--q text] [--min-score 6] [--days 7] [--sort score|new|mentions|novelty|demand|feasibility]
+zatravka export [--format xlsx|csv|json|md] [same filters] [--out file]   Excel by default
+zatravka digest [--days 1] [--send]   Markdown digest in data/digests (+ Telegram)
+zatravka import file.json [--direction key]
+zatravka reclassify [--all]        relabel after a taxonomy change
+zatravka rescore                   recompute scores after a weight change
+zatravka stats                     database, direction and spending statistics
+zatravka daemon                    scheduled runs + daily digest
+zatravka serve [--host --port]     web UI
+zatravka unlock                    release a stuck run lock
+zatravka threads-token SHORT --app-secret SECRET [--save]   long-lived Threads token
+zatravka accounts list|add|remove|check|discover [@name…] [--direction key] [--count N]
 ```
 
-Excel-выгрузка — книга из трёх листов. «Идеи»: все поля, шесть оценок, русские подписи, автофильтр,
-закреплённые шапка и название, ссылка на пост. «Источники»: цитаты с отметкой, нашлись ли они
-в посте дословно, и ссылки. «Сфера × рынок»: сводная таблица. Тексты из соцсетей записываются
-как строки, поэтому формулы из постов не исполняются (в CSV такие значения экранируются апострофом).
+The Excel export is a three-sheet workbook. "Ideas": every field, the six scores, readable
+labels, autofilter, frozen header and title, a link to the post. "Sources": quotes marked by
+whether they were found verbatim in the post, with links. "Sphere × market": a pivot table.
+Social media texts are written as strings, so formulas from posts never execute (in CSV such
+values are escaped with an apostrophe).
 
-## Интерфейс
+## Web UI
 
-- **Идеи**: теплокарта «сфера × рынок» (клик по клетке фильтрует список), фильтры по типу
-  продукта, типу идеи, площадке, статусу и баллу, поиск, выгрузка текущей выборки в
-  Excel, CSV, JSON или Markdown. Идею можно добавить в избранное или отклонить прямо из списка.
-- **Карточка идеи**: проблема, решение, аудитория, как выведена из поста, почему сейчас,
-  монетизация, риски, шесть оценок, теги, цитаты с ссылками на посты, варианты той же идеи,
-  статус (новая / избранное / в работе / отклонена / архив), заметка.
-- **Посты**: всё прочитанное и что с ним стало. Нужно, чтобы подкручивать фильтры.
-- **Направления**: отдача каждого направления, включение и выключение, предложения ИИ с обоснованием.
-- **Прогоны**: история, ошибки, расход ИИ по дням, состояние лент.
-- Кнопка «Запустить прогон» стартует прогон в фоне и показывает живой журнал. Демон и кнопка
-  не пересекаются благодаря блокировке прогона в базе.
+- **Ideas**: a "sphere × market" heatmap (clicking a cell filters the list), filters by product
+  type, idea type, platform, status and score, search, export of the current selection to
+  Excel, CSV, JSON or Markdown. Ideas can be starred or rejected right from the list.
+- **Idea page**: problem, solution, audience, how it was derived from the post, why now,
+  monetization, risks, the six scores, tags, quotes with links to posts, variants of the same
+  idea, status (new / starred / in progress / rejected / archived), a note.
+- **Posts**: everything that was read and what happened to it, for tuning the filters.
+- **Directions**: each direction's yield, on/off switches, LLM proposals with their rationale.
+- **Runs**: history, errors, LLM spending by day, feed health.
+- The "run" button starts a run in the background and shows a live log. The daemon and the
+  button never overlap thanks to a run lock in the database.
 
-## Устройство
+## Architecture
 
-Слои зависят только от нижележащих: `core` ничего не знает о базе и сети, `storage` —
-о конвейере, а CLI и веб работают через репозитории и не содержат SQL.
+Layers depend only on the layers below them: `core` knows nothing about the database or the
+network, `storage` knows nothing about the pipeline, and the CLI and web UI go through
+repositories and contain no SQL.
 
 ```
 zatravka/
-  config.py        типизированный конфиг + .env
-  core/            логика без ввода-вывода: модели, префильтр, похожесть текстов,
-                   баллы, таксономия, выборки, подписи
-  storage/         SQLite (WAL): подключение, миграции и репозитории — posts, ideas,
-                   idea_queries (выборки для интерфейса), directions, accounts, runs, feeds, usage
-  net/             вежливый HTTP-клиент и честный headless-рендер (Chromium без входа и маскировки)
-  llm/             провайдеры DeepSeek и Replicate, JSON-схемы, бюджет, учёт стоимости
-  prompts/         промпты стадий (Markdown, правятся без кода)
+  config.py        typed config + .env
+  core/            logic without I/O: models, prefilter, text similarity, scoring,
+                   taxonomy, selection, labels
+  storage/         SQLite (WAL): connection, migrations and repositories — posts, ideas,
+                   idea_queries (UI queries), directions, accounts, runs, feeds, usage
+  net/             polite HTTP client and honest headless rendering (Chromium, no login, no disguise)
+  llm/             DeepSeek and Replicate providers, JSON schemas, budget, cost tracking
+  prompts/         stage prompts (Markdown, editable without code changes)
   sources/         reddit (RSS/OAuth), x (API v2), threads (api + web + auth), rss, inbox
-  pipeline/        контекст, планировщик, стадии (collect, triage, enrich, extract,
-                   classify, dedup, explore, digest, discover), прогон и демон
-  export/          записи для выгрузки и форматы: Excel, CSV, JSON, Markdown
-  cli/             команды по группам: прогоны, идеи, аккаунты, настройка
-  web/             FastAPI + Jinja2: роутеры, фоновый прогон, хелперы шаблонов
+  pipeline/        context, planner, stages (collect, triage, enrich, extract,
+                   classify, dedup, explore, digest, discover), single run and daemon
+  export/          export records and formats: Excel, CSV, JSON, Markdown
+  cli/             commands by group: runs, ideas, accounts, setup
+  web/             FastAPI + Jinja2: routers, background run, template helpers
 ```
 
-Новый источник — класс-наследник `sources.base.Source` с методами `status`, `plan`
-(или `plan_global`) и `fetch`, добавленный в `sources/__init__.py`.
+A new source is a subclass of `sources.base.Source` with `status`, `plan` (or `plan_global`) and
+`fetch`, registered in `sources/__init__.py`.
 
-Тесты: `.venv/bin/pytest`. ИИ и сеть в них подменены.
+Tests: `.venv/bin/pytest`. The LLM and the network are mocked.
