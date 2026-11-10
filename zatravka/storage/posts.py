@@ -95,6 +95,13 @@ def promising_posts(db: DB, scope: Scope, limit: int, without_comments: bool = F
                     " ORDER BY triage_score DESC, prefilter_score DESC LIMIT ?", (*params, limit))
 
 
+def unvisited_posts(db: DB, platform: str, direction: str, limit: int) -> list[Row]:
+    """A direction's best-rated posts whose page has not been opened yet, whatever their status."""
+    return db.query("SELECT * FROM posts WHERE platform=? AND direction=? AND comments_json IS NULL"
+                    " ORDER BY triage_score IS NULL, triage_score DESC, prefilter_score DESC LIMIT ?",
+                    (platform, direction, limit))
+
+
 def save_comments(db: DB, post_id: int, comments: list[Comment]) -> None:
     db.execute("UPDATE posts SET comments_json=? WHERE id=?", (dumps([c.__dict__ for c in comments]), post_id))
 

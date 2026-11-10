@@ -106,10 +106,13 @@ def _add_idea_commands(sub: argparse._SubParsersAction) -> None:
 def _add_account_commands(sub: argparse._SubParsersAction) -> None:
     ac = sub.add_parser("accounts", help="аккаунты Threads для чтения профилей (веб-режим и API)")
     ac.add_argument("action", choices=list(ACTIONS),
-                    help="list — список; add/remove/check — по именам; discover — подобрать ИИ с проверкой")
+                    help="list — список; add/remove/check — по именам; discover — подобрать ИИ с проверкой;"
+                         " expand — авторы похожих тредов под лучшими постами направления, без ИИ")
     ac.add_argument("names", nargs="*", help="@имя или ссылка на профиль")
-    ac.add_argument("--direction", help="ключ направления (для discover — через запятую; по умолчанию region_cis)")
-    ac.add_argument("--count", type=int, default=8, help="discover: сколько аккаунтов попросить у ИИ")
+    ac.add_argument("--direction",
+                    help="ключ направления (для discover и expand — через запятую; по умолчанию region_cis)")
+    ac.add_argument("--count", type=int, default=8,
+                    help="discover: сколько аккаунтов попросить у ИИ; expand: сколько страниц постов открыть")
     ac.set_defaults(fn=cmd_accounts)
 
     tt = sub.add_parser("threads-token", help="обменять короткий токен Threads на долгий (60 дней)")

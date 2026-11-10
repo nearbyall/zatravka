@@ -67,6 +67,7 @@ docker compose down               # остановить всё; данные о
 zatravka accounts add @имя1 @имя2 --direction region_cis   # добавить аккаунты к направлению
 zatravka accounts check @имя                               # открыть профиль и показать, что видно
 zatravka accounts discover --direction cis_sellers --count 12   # ИИ предлагает, браузер проверяет
+zatravka accounts expand --direction cis_sellers --count 10     # авторы похожих тредов, без ИИ
 zatravka accounts list
 ```
 
@@ -75,7 +76,9 @@ zatravka accounts list
 открывает страницу поста. Оттуда берутся первые ответы (без входа видно до 5–8) и пять «похожих
 тредов»: Threads подбирает их по теме и языку. Авторы похожих тредов добавляются к направлению
 поста с пометкой «из похожих тредов», пока у направления меньше `max_accounts_per_direction`
-включённых аккаунтов. Выключить: `sources.threads.related_authors: false`.
+включённых аккаунтов. Выключить: `sources.threads.related_authors: false`. Если аккаунты-затравки
+пишут в основном рекламу и новости и триаж ничего не пропускает, `accounts expand` открывает
+страницы лучших постов направления независимо от порога и так же добавляет авторов похожих тредов.
 Аккаунт, который трижды подряд оказался пустым, выключается сам. За прогон читается
 `accounts_per_direction` аккаунтов направления (по кругу) и `global_accounts_per_run` общих.
 Chromium ищется в PATH и кэше Playwright, в Docker-образ он уже установлен.
@@ -226,7 +229,7 @@ zatravka daemon                    прогоны по расписанию + е
 zatravka serve [--host --port]     веб-интерфейс
 zatravka unlock                    снять зависшую блокировку прогона
 zatravka threads-token КОРОТКИЙ --app-secret СЕКРЕТ [--save]   долгий токен Threads
-zatravka accounts list|add|remove|check|discover [@имя…] [--direction ключ] [--count N]
+zatravka accounts list|add|remove|check|discover|expand [@имя…] [--direction ключ] [--count N]
 ```
 
 Excel-выгрузка — книга из трёх листов. «Идеи»: все поля, шесть оценок, русские подписи, автофильтр,

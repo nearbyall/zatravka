@@ -221,3 +221,23 @@ def test_enrich_takes_replies_and_adopts_related_authors(web_cfg, ctx):
     assert [c["body"] for c in loads(row["comments_json"])] == ["Плачу 5 тысяч в месяц, а толку ноль"]
     rows = ctx.db.query("SELECT username, direction, origin FROM accounts WHERE origin='related'")
     assert rows == [{"username": "eve", "direction": "cis_smb_admin", "origin": "related"}]  # a cap of 2 means alice and eve
+
+
+def test_expand_follows_related_threads_of_skipped_posts(web_cfg, ctx):
+    from zatravka.core.models import RawPost
+    from zatravka.pipeline.stages.discover import expand_accounts
+    from zatravka.storage.directions import sync_directions
+    from zatravka.storage.posts import insert_posts
+    sync_directions(ctx.cfg, ctx.db)
+    web_cfg.sources.threads.mode = "web"
+    browser = FakeBrowser([post_page(related=[post(301, "eve", "раз"), post(302, "frank", "два")])])
+    ctx.sources["threads"] = ThreadsSource(web_cfg, ctx.http, ctx.db, backends={
+        "api": ThreadsApiBackend(web_cfg, ctx.http), "web": ThreadsWebBackend(web_cfg, browser)})
+    insert_posts(ctx.db, [RawPost(platform="threads", ext_id=str(i), url=f"https://www.threads.net/@alice/post/P{i}",
+                                  author="alice", title=None, body=f"Реклама {i}", created_at=None,
+                                  direction="cis_smb_admin") for i in (1, 2)], None)
+    ctx.db.execute("UPDATE posts SET status='skipped', triage_score=CASE WHEN url LIKE '%/P2' THEN 5 ELSE 3 END")
+    assert expand_accounts(ctx, "cis_smb_admin", posts=1) == ["eve", "frank"]
+    assert browser.urls == ["https://www.threads.com/@alice/post/P2"]
+    assert expand_accounts(ctx, "cis_smb_admin", posts=1) == []
+    assert browser.urls[-1] == "https://www.threads.com/@alice/post/P1"

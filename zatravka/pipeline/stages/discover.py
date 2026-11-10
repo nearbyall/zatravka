@@ -1,7 +1,9 @@
-"""Finding Threads accounts for a direction: the LLM suggests, the browser verifies.
+"""Finding Threads accounts for a direction.
 
-LLMs readily invent plausible names, so only accounts whose page opened and showed
-fresh text posts make it into the registry.
+- discover: the LLM suggests and the browser verifies. LLMs readily invent plausible
+  names, so only accounts whose page opened and showed fresh text posts get in;
+- expand: no LLM. The pages of the direction's posts show related threads close in
+  topic and language, and their authors join the direction.
 """
 from __future__ import annotations
 
@@ -14,6 +16,7 @@ from ...llm.schemas import AccountsOut
 from ...sources.base import SourceLimitReached
 from ...storage.accounts import add_account, known_usernames, normalize_username
 from ...storage.directions import load_directions
+from ...storage.posts import save_comments, unvisited_posts
 
 if TYPE_CHECKING:
     from ...config import Direction
@@ -64,6 +67,25 @@ def discover_accounts(ctx: "Ctx", direction_key: str, count: int = 8) -> list[st
             add_account(ctx.db, "threads", name, direction_key, origin="llm", note=suggestion.why)
             added.append(name)
     return added
+
+
+def expand_accounts(ctx: "Ctx", direction_key: str, posts: int = 5) -> list[str]:
+    """Opens the pages of the direction's best posts, below the triage threshold too, so that
+    seed accounts with promotional posts still lead to related authors."""
+    if direction_key not in load_directions(ctx.db, enabled_only=False):
+        raise ValueError(f"нет направления {direction_key}")
+    source = ctx.sources["threads"]
+    if "post" not in source.kinds():
+        raise ValueError("страницы постов Threads сейчас не читаются: " + source.status().reason)
+    before = known_usernames(ctx.db, "threads")
+    for post in unvisited_posts(ctx.db, "threads", direction_key, posts):
+        try:
+            save_comments(ctx.db, post["id"], source.comments(post))
+        except Exception as e:  # noqa: BLE001 - one broken page must not stop the expansion
+            ctx.log.warning("[expand] %s: %s", post["url"], e)
+            continue
+        ctx.stat("expand", "pages")
+    return sorted(known_usernames(ctx.db, "threads") - before)
 
 
 def _about(d: "Direction") -> str:

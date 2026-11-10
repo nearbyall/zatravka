@@ -5,7 +5,7 @@ import argparse
 
 from ..llm import BudgetExceeded
 from ..pipeline import Ctx
-from ..pipeline.stages.discover import check_account, discover_accounts
+from ..pipeline.stages.discover import check_account, discover_accounts, expand_accounts
 from ..storage.accounts import add_account, list_accounts, normalize_username, remove_account
 from ..storage.directions import sync_directions
 from .common import csv_list, load, mark
@@ -62,4 +62,15 @@ def _discover(ctx: Ctx, args: argparse.Namespace) -> None:
         print(f"{key}: добавлено {len(added)}: " + (", ".join("@" + a for a in added) or "—"))
 
 
-ACTIONS = {"list": _list, "add": _add, "remove": _remove, "check": _check, "discover": _discover}
+def _expand(ctx: Ctx, args: argparse.Namespace) -> None:
+    for key in csv_list(args.direction) or [DEFAULT_DISCOVER_DIRECTION]:
+        try:
+            added = expand_accounts(ctx, key, args.count)
+        except ValueError as e:
+            print(f"{key}: {e}")
+            continue
+        print(f"{key}: добавлено {len(added)}: " + (", ".join("@" + a for a in added) or "—"))
+
+
+ACTIONS = {"list": _list, "add": _add, "remove": _remove, "check": _check, "discover": _discover,
+           "expand": _expand}

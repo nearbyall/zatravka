@@ -70,6 +70,7 @@ token appears, the source switches to the official API by itself (`sources.threa
 zatravka accounts add @name1 @name2 --direction region_cis   # add accounts to a direction
 zatravka accounts check @name                                # open the profile and show what is visible
 zatravka accounts discover --direction cis_sellers --count 12   # the LLM suggests, the browser verifies
+zatravka accounts expand --direction cis_sellers --count 10     # authors of related threads, no LLM
 zatravka accounts list
 ```
 
@@ -79,7 +80,9 @@ Threads itself grows the registry more reliably. For the best posts of a run
 (up to 5–8 are visible logged out) and five "related threads" that Threads picks by topic and
 language. Authors of related threads join the post's direction, marked as found through related
 threads, while the direction has fewer than `max_accounts_per_direction` enabled accounts. Turn
-it off with `sources.threads.related_authors: false`. An account that comes back empty three
+it off with `sources.threads.related_authors: false`. When seed accounts post mostly ads or news
+and nothing passes triage, `accounts expand` opens the pages of the direction's best posts
+regardless of the threshold and adopts their related authors the same way. An account that comes back empty three
 times in a row is disabled automatically. A run reads `accounts_per_direction` accounts of each
 direction (round robin) and `global_accounts_per_run` shared ones. Chromium is looked up in PATH
 and the Playwright cache; the Docker image already includes it.
@@ -234,7 +237,7 @@ zatravka daemon                    scheduled runs + daily digest
 zatravka serve [--host --port]     web UI
 zatravka unlock                    release a stuck run lock
 zatravka threads-token SHORT --app-secret SECRET [--save]   long-lived Threads token
-zatravka accounts list|add|remove|check|discover [@name…] [--direction key] [--count N]
+zatravka accounts list|add|remove|check|discover|expand [@name…] [--direction key] [--count N]
 ```
 
 The Excel export is a three-sheet workbook. "Ideas": every field, the six scores, readable
