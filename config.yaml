@@ -708,3 +708,8 @@ directions:
       - '(фриланс OR фрилансер OR удалёнка OR заказчик OR "биржа фриланса") (бесит OR кидают OR "нет нормального" OR "хоть бы") lang:ru'
     threads_queries: ["фриланс заказчик кинул", "удалёнка инструменты"]
 
+  threads_by_authors:
+    name: "Беларусь и СНГ: авторы Threads"
+    region: cis
+    threads_accounts: [mike_showy, sergey.minyailo, catalogonliner, novasoul012, victor.homutouski, myfinby, betera_by]
+
