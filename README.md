@@ -210,6 +210,7 @@ Everything lives in `config.yaml`. The main parts:
 - `scoring.weights`: score weights. After editing run `zatravka rescore` (no LLM).
 - `prefilter.signals` and `spam_patterns`: weighted regular expressions.
 - `triage.threshold`, `random_share`, `extract.max_posts_per_run`: strictness and volume.
+  `triage.platform_thresholds` overrides the threshold per platform: short Threads posts pass at 5.
 - `budget`, `schedule`: money and timing.
 - Prompts live in `zatravka/prompts/*.md`. Edit them in place or point `storage.prompts_dir` at
   your own folder (you can override only the files you need).

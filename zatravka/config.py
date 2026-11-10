@@ -168,8 +168,12 @@ class Triage(BaseModel):
     batch_size: int = 20
     max_posts_per_run: int = 120
     threshold: float = 6
+    platform_thresholds: dict[str, float] = Field(default_factory=dict)
     random_share: float = 0.15
     max_body_chars: int = 1500
+
+    def threshold_for(self, platform: str) -> float:
+        return self.platform_thresholds.get(platform, self.threshold)
 
 
 class Extract(BaseModel):

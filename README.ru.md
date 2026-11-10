@@ -202,6 +202,7 @@ Chromium ищется в PATH и кэше Playwright, в Docker-образ он 
 - `scoring.weights` — веса оценок. После правки — `zatravka rescore` (без ИИ).
 - `prefilter.signals` и `spam_patterns` — регулярки с весами.
 - `triage.threshold`, `random_share`, `extract.max_posts_per_run` — строгость и объём.
+  `triage.platform_thresholds` задаёт порог отдельно для площадки: короткие посты Threads проходят с 5.
 - `budget`, `schedule` — деньги и расписание.
 - Промпты лежат в `zatravka/prompts/*.md`. Их можно править на месте или указать свою папку
   в `storage.prompts_dir` (переопределять можно не все файлы, а только нужные).

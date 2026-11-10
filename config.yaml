@@ -164,6 +164,8 @@ triage:
   batch_size: 20
   max_posts_per_run: 120
   threshold: 7                  # 0..10; posts below it are not extracted
+  # Short Threads posts score lower for the same pain, so they pass at 5
+  platform_thresholds: {threads: 5}
   random_share: 0.15            # share of random posts without signals, against tunnel vision
   max_body_chars: 1500
 

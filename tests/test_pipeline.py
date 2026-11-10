@@ -266,3 +266,22 @@ def test_scoped_run_processes_only_its_posts(ctx, fake_reddit):
     assert by_platform["reddit"] == "candidate"  # the backlog is untouched
     assert by_platform["x"] in ("extracted", "skipped", "promising")
     assert not explored and not ctx.scope  # a limited run does not explore, and the scope is reset
+
+
+def test_triage_threshold_per_platform(ctx):
+    import json as _json
+    import re as _re
+    from conftest import FakeProvider
+    from zatravka.core.models import RawPost
+    from zatravka.pipeline.stages.triage import run_triage
+    from zatravka.storage.posts import insert_posts
+    ctx.cfg.triage.threshold, ctx.cfg.triage.platform_thresholds = 7, {"threads": 5}
+    insert_posts(ctx.db, [RawPost(platform=p, ext_id=p, url=f"https://{p}.example/1", author="a", title=None,
+                                  body=f"Пост с {p}: бесит считать всё вручную", created_at=None)
+                          for p in ("threads", "reddit")], None)
+    ctx.db.execute("UPDATE posts SET status='candidate', prefilter_score=1")
+    ctx.llm.providers = [FakeProvider(lambda s, u: _json.dumps({"items": [
+        {"id": int(i), "score": 5, "signals": [], "note": ""} for i in _re.findall(r"### id=(\d+)", u)]}))]
+    run_triage(ctx)
+    statuses = {r["platform"]: r["status"] for r in ctx.db.query("SELECT platform, status FROM posts")}
+    assert statuses == {"threads": "promising", "reddit": "skipped"}

@@ -67,7 +67,7 @@ def run_triage(ctx: "Ctx", limit: int | None = None) -> None:
             if not item:
                 ctx.stat("triage", "missed")
                 continue
-            status = "promising" if item.score >= cfg.threshold else "skipped"
+            status = "promising" if item.score >= cfg.threshold_for(r["platform"]) else "skipped"
             ctx.stat("triage", status)
             results.append((item.score, dumps(item.signals), item.note[:NOTE_LENGTH], status, r["id"]))
         save_triage(ctx.db, results)
