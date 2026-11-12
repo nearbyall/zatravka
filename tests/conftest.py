@@ -96,6 +96,7 @@ def cfg(tmp_path):
     })
     c.secrets = Secrets()  # real keys from .env are useless and risky in tests
     c.sources.threads.web.enabled = False  # never launch a real Chromium in tests
+    c.sources.rss.feeds = []  # never read the real feeds from config.yaml in tests
     return c
 
 
