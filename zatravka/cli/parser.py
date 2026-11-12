@@ -6,7 +6,7 @@ from .accounts import ACTIONS, cmd_accounts
 from .ideas import cmd_export, cmd_ideas, cmd_import, cmd_stats
 from .runs import (cmd_collect, cmd_daemon, cmd_digest, cmd_explore, cmd_process, cmd_reclassify, cmd_rescore,
                    cmd_run, cmd_unlock)
-from .setup import cmd_doctor, cmd_init, cmd_serve, cmd_threads_token
+from .setup import cmd_doctor, cmd_init, cmd_serve, cmd_showcase, cmd_threads_token
 
 REGIONS_HELP = "cis, eu, north_america, latam, east_europe, mena, africa, south_asia, east_asia, oceania, global"
 
@@ -32,6 +32,14 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--host")
     s.add_argument("--port", type=int)
     s.set_defaults(fn=cmd_serve)
+
+    sh = sub.add_parser("showcase", help="публичная витрина: только идеи, фильтры и выгрузки")
+    sh.add_argument("action", choices=["build", "serve"],
+                    help="build — собрать очищенный снимок базы; serve — показать его, только чтение")
+    sh.add_argument("--db", help="путь к снимку (по умолчанию data/showcase/ideas.db)")
+    sh.add_argument("--host")
+    sh.add_argument("--port", type=int)
+    sh.set_defaults(fn=cmd_showcase)
     return p
 
 

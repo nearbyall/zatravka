@@ -36,14 +36,20 @@ def placeholders(values: Any) -> str:
 
 
 class DB:
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path, readonly: bool = False):
+        """`readonly` opens a finished file as immutable: no migrations, no journal, no writes."""
         self.path = str(path)
+        self.lock = threading.RLock()
+        self._tx_depth = 0
+        if readonly:
+            self.conn = sqlite3.connect(f"{Path(self.path).resolve().as_uri()}?mode=ro&immutable=1", uri=True,
+                                        check_same_thread=False, isolation_level=None)
+            self.conn.row_factory = sqlite3.Row
+            return
         if self.path != ":memory:":
             Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.path, check_same_thread=False, isolation_level=None, timeout=30)
         self.conn.row_factory = sqlite3.Row
-        self.lock = threading.RLock()
-        self._tx_depth = 0
         with self.lock:
             for pragma in ("journal_mode=WAL", "foreign_keys=ON", "busy_timeout=30000", "synchronous=NORMAL"):
                 self.conn.execute(f"PRAGMA {pragma}")

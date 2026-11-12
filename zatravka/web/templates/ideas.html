@@ -65,9 +65,13 @@
       <h1>Идеи</h1>
       <dl class="tally">
         <div><dt>идей</dt><dd>{{ totals.ideas }}</dd></div>
+        {% if public %}
+        <div><dt>обновлено</dt><dd>{{ totals.snapshot_at | ago }}</dd></div>
+        {% else %}
         <div><dt>постов прочитано</dt><dd>{{ totals.posts }}</dd></div>
         <div><dt>в очереди</dt><dd>{{ totals.queue }}</dd></div>
         <div><dt>последний прогон</dt><dd><a href="/runs">{{ totals.last_run.finished_at | ago if totals.last_run else 'ещё не было' }}</a></dd></div>
+        {% endif %}
       </dl>
     </header>
 
@@ -79,6 +83,7 @@
     </form>
 
     <div class="facets">
+      {% if not public %}
       <div class="facet">
         <h3>Подборка</h3>
         <div class="opts">
@@ -87,6 +92,7 @@
           {{ m.opt('все', url_with(request, status='all'), f.status == 'all') }}
         </div>
       </div>
+      {% endif %}
       <div class="facet">
         <h3>Тип продукта</h3>
         <div class="opts">
@@ -175,7 +181,7 @@
             {% if ev %}<li class="src">{{ PLATFORM.get(ev.platform, ev.platform) }}{% if ev.community %}, {{ 'r/' if ev.platform == 'reddit' }}{{ ev.community }}{% endif %}</li>{% endif %}
           </ul>
         </div>
-        {{ m.status_buttons(r, compact=true) }}
+        {% if not public %}{{ m.status_buttons(r, compact=true) }}{% endif %}
       </li>
       {% endfor %}
     </ol>
@@ -184,6 +190,8 @@
     <div class="empty">
       {% if totals.ideas %}
         <p>Под эти фильтры идей нет. <a href="/">Сбросить всё</a></p>
+      {% elif public %}
+        <p>Идей пока нет.</p>
       {% else %}
         <h2>Идей пока нет</h2>
         <p>Запустите первый прогон: система прочитает ленты, отберёт посты и извлечёт из них идеи. Первый прогон

@@ -236,6 +236,7 @@ zatravka rescore                   recompute scores after a weight change
 zatravka stats                     database, direction and spending statistics
 zatravka daemon                    scheduled runs + daily digest
 zatravka serve [--host --port]     web UI
+zatravka showcase build|serve [--db file] [--host --port]   public read-only showcase
 zatravka unlock                    release a stuck run lock
 zatravka threads-token SHORT --app-secret SECRET [--save]   long-lived Threads token
 zatravka accounts list|add|remove|check|discover|expand [@name…] [--direction key] [--count N]
@@ -246,6 +247,26 @@ labels, autofilter, frozen header and title, a link to the post. "Sources": quot
 whether they were found verbatim in the post, with links. "Sphere × market": a pivot table.
 Social media texts are written as strings, so formulas from posts never execute (in CSV such
 values are escaped with an apostrophe).
+
+## Showcase
+
+The working UI starts paid runs and edits ideas, so it must stay on localhost. To show ideas to
+other people, use the showcase: ideas, filters and exports, nothing else.
+
+```bash
+zatravka showcase build     # writes a sanitized snapshot to data/showcase/ideas.db
+zatravka showcase serve     # http://127.0.0.1:8620, read-only
+```
+
+- The snapshot holds classified, non-rejected ideas and links to their source posts. Notes,
+  statuses, quotes, post texts and author names are not copied, so they cannot leak.
+- The showcase app has no routes for runs, posts, directions, the JSON API or its schema. Any
+  method except GET and HEAD gets 405. Responses carry a CSP and the usual hardening headers.
+- It opens the snapshot immutable and needs neither `.env` nor the working database. The
+  `showcase` service in `compose.yaml` runs it with a read-only filesystem and no capabilities.
+- Rebuild the snapshot to publish new ideas, then restart the service.
+
+Put a reverse proxy with HTTPS and rate limiting in front before exposing it.
 
 ## Web UI
 

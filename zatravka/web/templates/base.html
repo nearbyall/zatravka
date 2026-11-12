@@ -18,11 +18,14 @@
     </a>
     <nav class="nav" aria-label="Разделы">
       <a href="/" {% if nav in ('ideas', 'idea') %}aria-current="page"{% endif %}>Идеи</a>
+      {% if not public %}
       <a href="/posts" {% if nav == 'posts' %}aria-current="page"{% endif %}>Посты</a>
       <a href="/directions" {% if nav == 'directions' %}aria-current="page"{% endif %}>Направления</a>
       <a href="/runs" {% if nav == 'runs' %}aria-current="page"{% endif %}>Прогоны</a>
+      {% endif %}
     </nav>
     <div class="top-tools">
+      {% if not public %}
       <a class="spend{% if budget and spent_today >= budget %} spend-over{% endif %}" href="/runs"
          title="Расход на ИИ сегодня из дневного бюджета">
         <span class="spend-label">ИИ сегодня</span>
@@ -32,6 +35,7 @@
       <button class="btn btn-primary" id="run-btn" type="button" {% if runner.running %}data-running{% endif %}>
         {% if runner.running %}Прогон идёт{% else %}Запустить прогон{% endif %}
       </button>
+      {% endif %}
       <button class="icon-btn" id="theme-btn" type="button" aria-label="Сменить тему" title="Сменить тему">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path class="fill" d="M12 3.5a8.5 8.5 0 0 1 0 17z"/></svg>
       </button>
@@ -42,6 +46,7 @@
     {% block main %}{% endblock %}
   </main>
 
+  {% if not public %}
   <aside class="runlog" id="runlog" hidden aria-live="polite">
     <div class="runlog-head">
       <strong id="runlog-title">Прогон идёт</strong>
@@ -55,6 +60,7 @@
       <a class="btn" href="">Обновить страницу</a>
     </div>
   </aside>
+  {% endif %}
   <div class="toast" id="toast" role="status" hidden></div>
   <script src="/static/app.js?v=3" defer></script>
 </body>

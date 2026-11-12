@@ -112,12 +112,19 @@ class WebState:
     cfg: Config
     db: DB
     tax: Taxonomy
-    runner: Runner
     templates: Jinja2Templates
+    runner: Runner | None = None
+
+    @property
+    def public(self) -> bool:
+        """The showcase: a read-only snapshot with no runs, statuses or notes."""
+        return self.runner is None
 
     def render(self, request: Request, name: str, **context: Any) -> HTMLResponse:
-        context.update(request=request, spent_today=spent_today(self.db), budget=self.cfg.budget.daily_usd,
-                       runner=self.runner.state(), nav=name)
+        context.update(request=request, nav=name, public=self.public)
+        if self.runner:
+            context.update(spent_today=spent_today(self.db), budget=self.cfg.budget.daily_usd,
+                           runner=self.runner.state())
         return self.templates.TemplateResponse(request, f"{name}.html", context)
 
 

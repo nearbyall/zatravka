@@ -20,7 +20,8 @@ from zatravka.pipeline import run_once
 from zatravka.pipeline.planner import make_plan, pick_directions
 from zatravka.sources.reddit import RedditSource, parse_rss_comments, parse_rss_posts
 from zatravka.pipeline.stages.digest import run_digest
-from zatravka.web.app import create_app
+from zatravka.storage.snapshot import write_snapshot
+from zatravka.web.app import create_app, create_showcase_app
 from zatravka.web.views import plural
 
 LISTING = (FIXTURES / "reddit_listing.atom").read_bytes()
@@ -186,6 +187,41 @@ def test_web(ctx, fake_reddit):
     xlsx = client.get("/export.xlsx?market=B2C")
     assert xlsx.status_code == 200 and xlsx.headers["content-type"].startswith("application/vnd.openxml")
     assert load_workbook(io.BytesIO(xlsx.content))["Идеи"].max_row == 2
+    assert client.post(f"/api/ideas/{idea_id}/status", json={"status": []}).status_code == 400
+    assert client.get("/?page=" + "9" * 30).status_code == 200
+    assert len(client.get("/api/ideas?limit=-1").json()["items"]) == 1
+
+
+def test_showcase_serves_a_sanitized_snapshot_read_only(ctx, fake_reddit, tmp_path):
+    run_once(ctx, only_directions=["pain_hunting"])
+    hidden, shown = [r["id"] for r in ctx.db.query("SELECT id FROM ideas WHERE cluster_id=id ORDER BY id LIMIT 2")]
+    ctx.db.execute("UPDATE ideas SET status='rejected' WHERE id=?", (hidden,))
+    ctx.db.execute("UPDATE ideas SET note='PRIVATE NOTE', status='starred' WHERE id=?", (shown,))
+    quote = ctx.db.scalar("SELECT quote FROM idea_evidence WHERE idea_id=?", (shown,))
+    snapshot = tmp_path / "ideas.db"
+    assert write_snapshot(ctx.db, snapshot) == ctx.db.scalar(
+        "SELECT COUNT(*) FROM ideas WHERE cluster_id=id AND status != 'rejected'")
+    client = TestClient(create_showcase_app(ctx.cfg, snapshot))
+    home = client.get("/?status=all")
+    assert home.status_code == 200 and "Шахматка" in home.text
+    assert "run-btn" not in home.text and "data-status" not in home.text and "/runs" not in home.text
+    assert "nosniff" in home.headers["x-content-type-options"] and "content-security-policy" in home.headers
+    assert client.get(f"/idea/{hidden}").status_code == 404
+    page = client.get(f"/idea/{shown}")
+    assert page.status_code == 200 and "PRIVATE NOTE" not in page.text and "data-note" not in page.text
+    exported = client.get("/export.json").text
+    assert "PRIVATE NOTE" not in exported and quote and quote not in exported and quote not in page.text
+    for url in ("/posts", "/directions", "/runs", "/api/ideas", "/api/run", "/api/docs", "/openapi.json"):
+        assert client.get(url).status_code == 404, url
+    assert client.post("/api/run").status_code == 405
+    assert client.post(f"/api/ideas/{shown}/status", json={"status": "rejected"}).status_code == 405
+    assert snapshot.read_bytes().find(b"PRIVATE NOTE") == -1
+
+
+def test_csv_escapes_formulas_in_joined_fields():
+    row = {"title": "t", "tags": ["=HYPERLINK(1)", "ok"], "regions": ["+cis"], "sources": [{"url": "=x"}]}
+    lines = to_csv([row]).splitlines()[1]
+    assert "'=HYPERLINK(1), ok" in lines and "'+cis" in lines and "'=x" in lines
 
 
 def test_plural():

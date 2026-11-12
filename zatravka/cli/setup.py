@@ -2,18 +2,23 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import httpx
 
 from ..config import Config, load_config
 from ..pipeline import Ctx
 from ..sources.threads import ensure_token, exchange_token, whoami
+from ..storage.db import DB
 from ..storage.directions import sync_directions
+from ..storage.snapshot import write_snapshot
 from ..storage.usage import spent_today
 from .common import load, mark
 
 CHECK_TIMEOUT_S = 15
 X_USAGE_URL = "https://api.x.com/2/usage/tweets"
+SHOWCASE_DB = "data/showcase/ideas.db"
+SHOWCASE_PORT = 8620
 
 
 def cmd_init(args: argparse.Namespace) -> None:
@@ -110,3 +115,22 @@ def cmd_serve(args: argparse.Namespace) -> None:
 
     cfg = load_config(args.config)
     uvicorn.run(create_app(cfg), host=args.host or cfg.web.host, port=args.port or cfg.web.port, log_level="warning")
+
+
+def cmd_showcase(args: argparse.Namespace) -> None:
+    cfg = load_config(args.config)
+    snapshot = Path(args.db) if args.db else cfg.path(SHOWCASE_DB)
+    if args.action == "build":
+        snapshot.parent.mkdir(parents=True, exist_ok=True)
+        db = DB(cfg.db_path)
+        print(f"Снимок для витрины: {snapshot}, идей {write_snapshot(db, snapshot)}")
+        db.close()
+        return
+    if not snapshot.exists():
+        raise SystemExit(f"Нет снимка {snapshot}. Сначала: zatravka showcase build")
+    import uvicorn
+
+    from ..web.app import create_showcase_app
+
+    uvicorn.run(create_showcase_app(cfg, snapshot), host=args.host or "127.0.0.1", port=args.port or SHOWCASE_PORT,
+                log_level="warning")

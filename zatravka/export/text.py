@@ -21,11 +21,11 @@ def to_csv(items: list[Record]) -> str:
     writer = csv.DictWriter(buf, fieldnames=EXPORT_FIELDS, extrasaction="ignore")
     writer.writeheader()
     for it in items:
-        row = {k: safe_cell(v) for k, v in it.items()}
+        row = dict(it)
         row["tags"] = ", ".join(it.get("tags") or [])
         row["regions"] = ", ".join(it.get("regions") or [])
         row["sources"] = " ".join(s["url"] or "" for s in it.get("sources") or [])
-        writer.writerow(row)
+        writer.writerow({k: safe_cell(v) for k, v in row.items()})
     return buf.getvalue()
 
 
@@ -50,6 +50,7 @@ def to_markdown(items: list[Record]) -> str:
             f"**Риски.** {it.get('risks') or '—'}",
             "",
         ]
-        lines += [f"> {s['quote']}  \n> — {s['url']}" for s in it.get("sources") or []]
+        lines += [f"> {s['quote']}  \n> — {s['url']}" if s.get("quote") else f"Источник: {s['url']}"
+                  for s in it.get("sources") or []]
         lines.append("")
     return "\n".join(lines)

@@ -33,7 +33,7 @@
     </div>
   </header>
 
-  {{ m.status_buttons(idea) }}
+  {% if not public %}{{ m.status_buttons(idea) }}{% endif %}
 
   <div class="sheet-grid">
     <dl class="spec">
@@ -63,11 +63,13 @@
       {% if idea.tags %}
       <ul class="tags">{% for t in idea.tags %}<li><a href="/?q={{ t | urlencode }}">{{ t }}</a></li>{% endfor %}</ul>
       {% endif %}
+      {% if not public %}
       <label class="field field-note">
         <span>Заметка</span>
         <textarea data-note="{{ idea.id }}" rows="4" placeholder="Мысли, проверки, контакты">{{ idea.note or '' }}</textarea>
       </label>
       <p class="saved" data-saved hidden>Заметка сохранена</p>
+      {% endif %}
     </aside>
   </div>
 </article>

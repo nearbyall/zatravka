@@ -2,6 +2,8 @@
 #   docker compose up -d --build    start both (the daemon spends the LLM budget on schedule)
 #   docker compose up -d web        the UI only, no scheduled runs
 #   docker compose logs -f worker   follow the runs
+#   docker compose --profile showcase up -d showcase   the public read-only showcase on :8620;
+#       build its snapshot first with `zatravka showcase build`, restart the service after a rebuild
 #   docker compose down             stop (data in ./data is kept)
 services:
   worker:
@@ -27,3 +29,21 @@ services:
       - "127.0.0.1:8610:8610"
     restart: unless-stopped
     mem_limit: 384m
+
+  # The only service meant to face the internet: no keys, no working database, no writable disk.
+  showcase:
+    build: .
+    command: ["zatravka", "showcase", "serve", "--host", "0.0.0.0", "--port", "8620"]
+    user: "${ZATRAVKA_UID:-1000}:${ZATRAVKA_GID:-1000}"
+    profiles: ["showcase"]
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data/showcase:/app/data/showcase:ro
+    ports:
+      - "127.0.0.1:8620:8620"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 256m
+    restart: unless-stopped
