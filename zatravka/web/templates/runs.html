@@ -17,7 +17,7 @@
     {% set st = r.stats %}
     <tr>
       <td class="nowrap">#{{ r.id }} <span class="muted">{{ r.trigger }}, {{ r.started_at | ago }}</span>
-        {% if r.plan.directions %}<br><span class="muted">{{ r.plan.directions | join(', ') }}</span>{% endif %}
+        {% if r.plan.directions %}<div class="muted run-dirs">{{ r.plan.directions | join(', ') }}</div>{% endif %}
       </td>
       <td>
         <span class="badge badge-run-{{ r.status }}">{{ {'ok': 'готово', 'budget': 'упёрся в бюджет', 'error': 'ошибка', 'running': 'идёт', 'aborted': 'прерван', 'busy': 'занято'}.get(r.status, r.status) }}</span>

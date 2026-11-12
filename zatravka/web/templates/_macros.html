@@ -9,14 +9,20 @@
 {% endmacro %}
 
 {% macro insight(kind) %}
-<span class="insight insight-{{ kind }}"><i aria-hidden="true"></i>{{ INSIGHT.get(kind, kind) }}</span>
+<span class="insight insight-{{ kind }}" title="Как идея выведена из поста"><i aria-hidden="true"></i>{{ INSIGHT.get(kind, kind) }}</span>
 {% endmacro %}
 
 {% macro grade(score, big=false) %}
-<div class="grade{% if big %} grade-big{% endif %}" style="--t: {{ ((score or 0) / 10) | round(3) }}">
+<div class="grade{% if big %} grade-big{% endif %}" style="--t: {{ ((score or 0) / 10) | round(3) }}" title="Итоговый балл из 10">
   <span class="grade-num">{{ '%.1f' | format(score or 0) }}</span>
   <span class="grade-bar" aria-hidden="true"></span>
 </div>
+{% endmacro %}
+
+{# One filter option: a link that carries its count and marks itself when active. #}
+{% macro opt(label, href, on, n=none, title='') %}
+<a class="opt{% if n == 0 and not on %} opt-none{% endif %}" href="{{ href }}" {% if on %}aria-current="true"{% endif %}
+   {% if title %}title="{{ title }}"{% endif %}>{{ label }}{% if n is not none %}<span>{{ n }}</span>{% endif %}</a>
 {% endmacro %}
 
 {% macro status_buttons(idea, compact=false) %}

@@ -168,7 +168,7 @@ def test_web(ctx, fake_reddit):
                 "/directions", "/runs", "/healthz", "/api/ideas", "/api/run"):
         assert client.get(url).status_code == 200, url
     region_map = client.get("/?axis=region").text
-    assert "Где идеи: сфера и регион" in region_map and ">СНГ<" in region_map
+    assert "Шахматка: сфера и регион" in region_map and ">СНГ<" in region_map
     only_cis = client.get("/?region=cis&glob=0").text
     assert "Напоминалка" in only_cis and "Датчики" not in only_cis
     idea_id = ctx.db.scalar("SELECT id FROM ideas WHERE cluster_id=id ORDER BY id LIMIT 1")
