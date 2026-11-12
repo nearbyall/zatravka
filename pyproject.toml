@@ -30,7 +30,7 @@ zatravka = "zatravka.cli:main"
 include = ["zatravka*"]
 
 [tool.setuptools.package-data]
-zatravka = ["prompts/*.md", "web/templates/*.html", "web/static/*"]
+zatravka = ["prompts/*.md", "web/templates/*.html", "web/static/*", "web/static/fonts/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
