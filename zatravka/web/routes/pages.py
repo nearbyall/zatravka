@@ -27,7 +27,8 @@ def posts_page(request: Request, status: str | None = None, platform: str | None
                                limit=PAGE_SIZE, offset=(page - 1) * PAGE_SIZE)
     return web.render(request, "posts", rows=rows, total=total, page=page, pages=page_count(total),
                       f={"status": status, "platform": platform, "direction": direction, "q": q},
-                      counts=post_counts_by(web.db, "status"), directions=directions_in_use(web.db))
+                      counts=post_counts_by(web.db, "status"), platforms=post_counts_by(web.db, "platform"),
+                      directions=directions_in_use(web.db))
 
 
 @router.get("/directions", response_class=HTMLResponse)

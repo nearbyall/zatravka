@@ -12,7 +12,7 @@ from ...storage.db import DB
 from ...storage.idea_queries import (cluster_members, evidence_for, facet_counts, get_idea, lead_evidence,
                                      query_ideas, region_counts, similar_ideas)
 from ...storage.ideas import count_ideas, set_idea_note, set_idea_status
-from ...storage.posts import count_posts
+from ...storage.posts import count_posts, post_counts_by
 from ...storage.runs import last_finished_run
 from ..views import MAP_AXES, PAGE_SIZE, WebState, get_state, page_count
 
@@ -96,6 +96,7 @@ def ideas_page(request: Request, page: int = 1, web: WebState = Depends(get_stat
     }
     return web.render(request, "ideas", rows=rows, total=total, page=page, pages=page_count(total), f=f,
                       evidence={r["id"]: lead_evidence(db, r["id"]) for r in rows}, totals=totals,
+                      platforms=post_counts_by(db, "platform"),
                       **idea_map(db, web.tax, f, axis if axis in MAP_AXES else "market"), **facet_totals(db, f))
 
 

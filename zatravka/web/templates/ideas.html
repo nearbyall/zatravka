@@ -118,7 +118,7 @@
       <div class="facet">
         <h3>Площадка</h3>
         <div class="opts">
-          {% for k, label in PLATFORM.items() %}{{ m.opt(label, url_with(request, platform=None if f.platform == k else k), f.platform == k) }}{% endfor %}
+          {% for k, label in PLATFORM.items() if platforms.get(k) or f.platform == k %}{{ m.opt(label, url_with(request, platform=None if f.platform == k else k), f.platform == k) }}{% endfor %}
         </div>
       </div>
       <div class="facet">

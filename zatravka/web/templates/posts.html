@@ -24,7 +24,7 @@
     <span>Площадка</span>
     <select name="platform" data-autosubmit>
       <option value="">любая</option>
-      {% for k, label in PLATFORM.items() %}<option value="{{ k }}" {% if f.platform == k %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      {% for k, label in PLATFORM.items() if platforms.get(k) or f.platform == k %}<option value="{{ k }}" {% if f.platform == k %}selected{% endif %}>{{ label }}</option>{% endfor %}
     </select>
   </label>
   <label class="field">
