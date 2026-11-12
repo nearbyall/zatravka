@@ -109,38 +109,125 @@ sources:
     # Any RSS/Atom feeds, for example a self-hosted RSSHub for X or Threads:
     # - {url: "https://rsshub.example.com/threads/zuck", platform: threads, direction: wildcard}
     feeds:
-      # Habr: hub feeds and search feeds (newest first). A feed returns only its last 20-40 entries,
+      # Habr: hub feeds and search feeds, newest first. A feed returns at most its last 100 entries,
       # so volume comes from regular reading.
-      - {url: "https://habr.com/ru/rss/hubs/startuprise/articles/all/?fl=ru", platform: habr, label: "startuprise", direction: saas_founders}
-      - {url: "https://habr.com/ru/rss/hubs/i_am_advertising/articles/all/?fl=ru", platform: habr, label: "i_am_advertising", direction: saas_founders}
-      - {url: "https://habr.com/ru/rss/hubs/productpm/articles/all/?fl=ru", platform: habr, label: "productpm", direction: saas_founders}
-      - {url: "https://habr.com/ru/rss/hubs/freelance/articles/all/?fl=ru", platform: habr, label: "freelance", direction: cis_freelance_it}
-      - {url: "https://habr.com/ru/rss/hubs/career/articles/all/?fl=ru", platform: habr, label: "career", direction: hr_careers}
-      - {url: "https://habr.com/ru/rss/hubs/hr_management/articles/all/?fl=ru", platform: habr, label: "hr_management", direction: hr_careers}
-      - {url: "https://habr.com/ru/rss/hubs/finance/articles/all/?fl=ru", platform: habr, label: "finance", direction: personal_finance}
-      - {url: "https://habr.com/ru/rss/hubs/business-laws/articles/all/?fl=ru", platform: habr, label: "business-laws", direction: cis_smb_admin}
-      - {url: "https://habr.com/ru/rss/hubs/sales/articles/all/?fl=ru", platform: habr, label: "sales", direction: small_business_ops}
-      - {url: "https://habr.com/ru/rss/hubs/ecommerce_development/articles/all/?fl=ru", platform: habr, label: "ecommerce_development", direction: cis_sellers}
-      - {url: "https://habr.com/ru/rss/hubs/it-infrastructure/articles/all/?fl=ru", platform: habr, label: "it-infrastructure", direction: dev_tools}
-      - {url: "https://habr.com/ru/rss/hubs/gtd/articles/all/?fl=ru", platform: habr, label: "gtd", direction: mental_productivity}
-      - {url: "https://habr.com/ru/rss/hubs/lifehacks/articles/all/?fl=ru", platform: habr, label: "lifehacks", direction: region_cis}
-      - {url: "https://habr.com/ru/rss/hubs/health/articles/all/?fl=ru", platform: habr, label: "health", direction: health_fitness}
-      - {url: "https://habr.com/ru/rss/hubs/study/articles/all/?fl=ru", platform: habr, label: "study", direction: education}
-      - {url: "https://habr.com/ru/rss/hubs/diy/articles/all/?fl=ru", platform: habr, label: "diy", direction: hobbies_crafts}
-      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B5+%D1%85%D0%B2%D0%B0%D1%82%D0%B0%D0%B5%D1%82+%D0%B8%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "не хватает инструмента", direction: region_cis}
-      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B0%D0%B4%D0%BE%D0%B5%D0%BB%D0%BE+%D0%B4%D0%B5%D0%BB%D0%B0%D1%82%D1%8C+%D0%B2%D1%80%D1%83%D1%87%D0%BD%D1%83%D1%8E&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "надоело делать вручную", direction: region_cis}
-      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B5+%D0%BC%D0%BE%D0%B3%D1%83+%D0%BD%D0%B0%D0%B9%D1%82%D0%B8+%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "не могу найти сервис", direction: region_cis}
-      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B0%D0%BF%D0%B8%D1%81%D0%B0%D0%BB+%D0%B4%D0%BB%D1%8F+%D1%81%D0%B5%D0%B1%D1%8F&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "написал для себя", direction: cis_freelance_it}
-      - {url: "https://habr.com/ru/rss/search/?q=%D0%BF%D0%BE%D1%87%D0%B5%D0%BC%D1%83+%D0%B4%D0%BE+%D1%81%D0%B8%D1%85+%D0%BF%D0%BE%D1%80+%D0%BD%D0%B5%D1%82&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "почему до сих пор нет", direction: region_cis}
-      - {url: "https://habr.com/ru/rss/search/?q=%D0%B7%D0%B0%D0%BF%D0%BB%D0%B0%D1%82%D0%B8%D0%BB+%D0%B1%D1%8B+%D0%B7%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "заплатил бы за", direction: region_cis}
-      - {url: "https://habr.com/ru/rss/search/?q=Wildberries+%D1%81%D0%B5%D0%BB%D0%BB%D0%B5%D1%80&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "Wildberries селлер", direction: cis_sellers}
-      - {url: "https://habr.com/ru/rss/search/?q=Ozon+%D0%BF%D1%80%D0%BE%D0%B4%D0%B0%D0%B2%D0%B5%D1%86&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "Ozon продавец", direction: cis_sellers}
-      - {url: "https://habr.com/ru/rss/search/?q=%D0%98%D0%9F+%D0%B1%D1%83%D1%85%D0%B3%D0%B0%D0%BB%D1%82%D0%B5%D1%80%D0%B8%D1%8F+%D0%BD%D0%B0%D0%BB%D0%BE%D0%B3%D0%B8&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "ИП бухгалтерия налоги", direction: cis_smb_admin}
-      - {url: "https://habr.com/ru/rss/search/?q=%D1%84%D1%80%D0%B8%D0%BB%D0%B0%D0%BD%D1%81+%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D1%87%D0%B8%D0%BA&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "фриланс заказчик", direction: cis_freelance_it}
-      - {url: "https://habr.com/ru/rss/search/?q=%D0%96%D0%9A%D0%A5&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "ЖКХ", direction: cis_home_services}
-      - {url: "https://habr.com/ru/rss/search/?q=%D1%80%D0%BE%D0%B4%D0%B8%D1%82%D0%B5%D0%BB%D0%B8+%D1%88%D0%BA%D0%BE%D0%BB%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "родители школа", direction: cis_parents_edu}
-      - {url: "https://habr.com/ru/rss/search/?q=%D0%B3%D0%BE%D1%81%D1%83%D1%81%D0%BB%D1%83%D0%B3%D0%B8+%D0%BD%D0%B5%D1%83%D0%B4%D0%BE%D0%B1%D0%BD%D0%BE&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "госуслуги неудобно", direction: cis_daily_services}
-      - {url: "https://habr.com/ru/rss/search/?q=%D0%BF%D0%B5%D1%82-%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82&order_by=date&target_type=posts&hl=ru&fl=ru", platform: habr, label: "пет-проект", direction: cis_freelance_it}
+      - {url: "https://habr.com/ru/rss/hubs/startuprise/articles/all/?fl=ru&limit=100", platform: habr, label: "startuprise", direction: saas_founders}
+      - {url: "https://habr.com/ru/rss/hubs/i_am_advertising/articles/all/?fl=ru&limit=100", platform: habr, label: "i_am_advertising", direction: saas_founders}
+      - {url: "https://habr.com/ru/rss/hubs/productpm/articles/all/?fl=ru&limit=100", platform: habr, label: "productpm", direction: saas_founders}
+      - {url: "https://habr.com/ru/rss/hubs/business_models/articles/all/?fl=ru&limit=100", platform: habr, label: "business_models", direction: saas_founders}
+      - {url: "https://habr.com/ru/rss/hubs/growthhacking/articles/all/?fl=ru&limit=100", platform: habr, label: "growthhacking", direction: saas_founders}
+      - {url: "https://habr.com/ru/rss/hubs/saas/articles/all/?fl=ru&limit=100", platform: habr, label: "saas", direction: saas_founders}
+      - {url: "https://habr.com/ru/rss/hubs/pm/articles/all/?fl=ru&limit=100", platform: habr, label: "pm", direction: saas_founders}
+      - {url: "https://habr.com/ru/rss/hubs/freelance/articles/all/?fl=ru&limit=100", platform: habr, label: "freelance", direction: cis_freelance_it}
+      - {url: "https://habr.com/ru/rss/hubs/interviews/articles/all/?fl=ru&limit=100", platform: habr, label: "interviews", direction: cis_freelance_it}
+      - {url: "https://habr.com/ru/rss/hubs/career/articles/all/?fl=ru&limit=100", platform: habr, label: "career", direction: hr_careers}
+      - {url: "https://habr.com/ru/rss/hubs/hr_management/articles/all/?fl=ru&limit=100", platform: habr, label: "hr_management", direction: hr_careers}
+      - {url: "https://habr.com/ru/rss/hubs/finance/articles/all/?fl=ru&limit=100", platform: habr, label: "finance", direction: personal_finance}
+      - {url: "https://habr.com/ru/rss/hubs/cryptocurrency/articles/all/?fl=ru&limit=100", platform: habr, label: "cryptocurrency", direction: personal_finance}
+      - {url: "https://habr.com/ru/rss/hubs/business-laws/articles/all/?fl=ru&limit=100", platform: habr, label: "business-laws", direction: cis_smb_admin}
+      - {url: "https://habr.com/ru/rss/hubs/1c/articles/all/?fl=ru&limit=100", platform: habr, label: "1c", direction: cis_smb_admin}
+      - {url: "https://habr.com/ru/rss/hubs/copyright/articles/all/?fl=ru&limit=100", platform: habr, label: "copyright", direction: cis_smb_admin}
+      - {url: "https://habr.com/ru/rss/hubs/sales/articles/all/?fl=ru&limit=100", platform: habr, label: "sales", direction: small_business_ops}
+      - {url: "https://habr.com/ru/rss/hubs/crm/articles/all/?fl=ru&limit=100", platform: habr, label: "crm", direction: small_business_ops}
+      - {url: "https://habr.com/ru/rss/hubs/erp/articles/all/?fl=ru&limit=100", platform: habr, label: "erp", direction: small_business_ops}
+      - {url: "https://habr.com/ru/rss/hubs/service_desk/articles/all/?fl=ru&limit=100", platform: habr, label: "service_desk", direction: small_business_ops}
+      - {url: "https://habr.com/ru/rss/hubs/helpdesk/articles/all/?fl=ru&limit=100", platform: habr, label: "helpdesk", direction: small_business_ops}
+      - {url: "https://habr.com/ru/rss/hubs/ecommerce_development/articles/all/?fl=ru&limit=100", platform: habr, label: "ecommerce_development", direction: cis_sellers}
+      - {url: "https://habr.com/ru/rss/hubs/it-infrastructure/articles/all/?fl=ru&limit=100", platform: habr, label: "it-infrastructure", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/devops/articles/all/?fl=ru&limit=100", platform: habr, label: "devops", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/sys_admin/articles/all/?fl=ru&limit=100", platform: habr, label: "sys_admin", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/webdev/articles/all/?fl=ru&limit=100", platform: habr, label: "webdev", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/mobile_dev/articles/all/?fl=ru&limit=100", platform: habr, label: "mobile_dev", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/android_dev/articles/all/?fl=ru&limit=100", platform: habr, label: "android_dev", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/ios_dev/articles/all/?fl=ru&limit=100", platform: habr, label: "ios_dev", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/open_source/articles/all/?fl=ru&limit=100", platform: habr, label: "open_source", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/programming/articles/all/?fl=ru&limit=100", platform: habr, label: "programming", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/python/articles/all/?fl=ru&limit=100", platform: habr, label: "python", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/api/articles/all/?fl=ru&limit=100", platform: habr, label: "api", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/browser_extensions/articles/all/?fl=ru&limit=100", platform: habr, label: "browser_extensions", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/data_engineering/articles/all/?fl=ru&limit=100", platform: habr, label: "data_engineering", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/bigdata/articles/all/?fl=ru&limit=100", platform: habr, label: "bigdata", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/cloud_computing/articles/all/?fl=ru&limit=100", platform: habr, label: "cloud_computing", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/technical_writing/articles/all/?fl=ru&limit=100", platform: habr, label: "technical_writing", direction: dev_tools}
+      - {url: "https://habr.com/ru/rss/hubs/artificial_intelligence/articles/all/?fl=ru&limit=100", platform: habr, label: "artificial_intelligence", direction: ai_builders}
+      - {url: "https://habr.com/ru/rss/hubs/machine_learning/articles/all/?fl=ru&limit=100", platform: habr, label: "machine_learning", direction: ai_builders}
+      - {url: "https://habr.com/ru/rss/hubs/natural_language_processing/articles/all/?fl=ru&limit=100", platform: habr, label: "natural_language_processing", direction: ai_builders}
+      - {url: "https://habr.com/ru/rss/hubs/gtd/articles/all/?fl=ru&limit=100", platform: habr, label: "gtd", direction: mental_productivity}
+      - {url: "https://habr.com/ru/rss/hubs/lifehacks/articles/all/?fl=ru&limit=100", platform: habr, label: "lifehacks", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/hubs/urban/articles/all/?fl=ru&limit=100", platform: habr, label: "urban", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/hubs/ecology/articles/all/?fl=ru&limit=100", platform: habr, label: "ecology", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/hubs/research/articles/all/?fl=ru&limit=100", platform: habr, label: "research", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/hubs/health/articles/all/?fl=ru&limit=100", platform: habr, label: "health", direction: health_fitness}
+      - {url: "https://habr.com/ru/rss/hubs/medgadgets/articles/all/?fl=ru&limit=100", platform: habr, label: "medgadgets", direction: health_fitness}
+      - {url: "https://habr.com/ru/rss/hubs/telemedicine/articles/all/?fl=ru&limit=100", platform: habr, label: "telemedicine", direction: healthcare_pro}
+      - {url: "https://habr.com/ru/rss/hubs/biotech/articles/all/?fl=ru&limit=100", platform: habr, label: "biotech", direction: healthcare_pro}
+      - {url: "https://habr.com/ru/rss/hubs/study/articles/all/?fl=ru&limit=100", platform: habr, label: "study", direction: education}
+      - {url: "https://habr.com/ru/rss/hubs/learning_languages/articles/all/?fl=ru&limit=100", platform: habr, label: "learning_languages", direction: education}
+      - {url: "https://habr.com/ru/rss/hubs/diy/articles/all/?fl=ru&limit=100", platform: habr, label: "diy", direction: hobbies_crafts}
+      - {url: "https://habr.com/ru/rss/hubs/3d-printers/articles/all/?fl=ru&limit=100", platform: habr, label: "3d-printers", direction: hobbies_crafts}
+      - {url: "https://habr.com/ru/rss/hubs/gadgets/articles/all/?fl=ru&limit=100", platform: habr, label: "gadgets", direction: hobbies_crafts}
+      - {url: "https://habr.com/ru/rss/hubs/auto/articles/all/?fl=ru&limit=100", platform: habr, label: "auto", direction: auto_mobility}
+      - {url: "https://habr.com/ru/rss/hubs/transport/articles/all/?fl=ru&limit=100", platform: habr, label: "transport", direction: auto_mobility}
+      - {url: "https://habr.com/ru/rss/hubs/infosecurity/articles/all/?fl=ru&limit=100", platform: habr, label: "infosecurity", direction: security_privacy}
+      - {url: "https://habr.com/ru/rss/hubs/social_networks/articles/all/?fl=ru&limit=100", platform: habr, label: "social_networks", direction: marketing_creators}
+      - {url: "https://habr.com/ru/rss/hubs/community_management/articles/all/?fl=ru&limit=100", platform: habr, label: "community_management", direction: marketing_creators}
+      - {url: "https://habr.com/ru/rss/hubs/usability/articles/all/?fl=ru&limit=100", platform: habr, label: "usability", direction: marketing_creators}
+      - {url: "https://habr.com/ru/rss/hubs/design/articles/all/?fl=ru&limit=100", platform: habr, label: "design", direction: marketing_creators}
+      - {url: "https://habr.com/ru/rss/hubs/gamedev/articles/all/?fl=ru&limit=100", platform: habr, label: "gamedev", direction: game_dev}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B5+%D1%85%D0%B2%D0%B0%D1%82%D0%B0%D0%B5%D1%82+%D0%B8%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "не хватает инструмента", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B0%D0%B4%D0%BE%D0%B5%D0%BB%D0%BE+%D0%B4%D0%B5%D0%BB%D0%B0%D1%82%D1%8C+%D0%B2%D1%80%D1%83%D1%87%D0%BD%D1%83%D1%8E&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "надоело делать вручную", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B5+%D0%BC%D0%BE%D0%B3%D1%83+%D0%BD%D0%B0%D0%B9%D1%82%D0%B8+%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "не могу найти сервис", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BF%D0%BE%D1%87%D0%B5%D0%BC%D1%83+%D0%B4%D0%BE+%D1%81%D0%B8%D1%85+%D0%BF%D0%BE%D1%80+%D0%BD%D0%B5%D1%82&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "почему до сих пор нет", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B7%D0%B0%D0%BF%D0%BB%D0%B0%D1%82%D0%B8%D0%BB+%D0%B1%D1%8B+%D0%B7%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "заплатил бы за", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B5%D1%82+%D0%BD%D0%BE%D1%80%D0%BC%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE+%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "нет нормального сервиса", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BF%D1%80%D0%B8%D1%88%D0%BB%D0%BE%D1%81%D1%8C+%D0%BD%D0%B0%D0%BF%D0%B8%D1%81%D0%B0%D1%82%D1%8C+%D1%81%D0%B2%D0%BE%D0%B9&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "пришлось написать свой", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B5%D1%83%D0%B4%D0%BE%D0%B1%D0%BD%D0%BE+%D0%BF%D0%BE%D0%BB%D1%8C%D0%B7%D0%BE%D0%B2%D0%B0%D1%82%D1%8C%D1%81%D1%8F&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "неудобно пользоваться", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%83%D1%88%D1%91%D0%BB+%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81+%D0%B7%D0%B0%D0%BC%D0%B5%D0%BD%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "ушёл сервис замена", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B8%D0%BC%D0%BF%D0%BE%D1%80%D1%82%D0%BE%D0%B7%D0%B0%D0%BC%D0%B5%D1%89%D0%B5%D0%BD%D0%B8%D0%B5+%D0%B0%D0%BD%D0%B0%D0%BB%D0%BE%D0%B3&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "импортозамещение аналог", direction: region_cis}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B0%D0%BF%D0%B8%D1%81%D0%B0%D0%BB+%D0%B4%D0%BB%D1%8F+%D1%81%D0%B5%D0%B1%D1%8F&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "написал для себя", direction: cis_freelance_it}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%84%D1%80%D0%B8%D0%BB%D0%B0%D0%BD%D1%81+%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D1%87%D0%B8%D0%BA&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "фриланс заказчик", direction: cis_freelance_it}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BF%D0%B5%D1%82-%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "пет-проект", direction: cis_freelance_it}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%83%D0%B4%D0%B0%D0%BB%D1%91%D0%BD%D0%BA%D0%B0+%D0%BF%D1%80%D0%BE%D0%B1%D0%BB%D0%B5%D0%BC%D1%8B&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "удалёнка проблемы", direction: cis_freelance_it}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%81%D0%B0%D0%BC%D0%BE%D0%B7%D0%B0%D0%BD%D1%8F%D1%82%D1%8B%D0%B9&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "самозанятый", direction: cis_freelance_it}
+      - {url: "https://habr.com/ru/rss/search/?q=Wildberries+%D1%81%D0%B5%D0%BB%D0%BB%D0%B5%D1%80&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "Wildberries селлер", direction: cis_sellers}
+      - {url: "https://habr.com/ru/rss/search/?q=Ozon+%D0%BF%D1%80%D0%BE%D0%B4%D0%B0%D0%B2%D0%B5%D1%86&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "Ozon продавец", direction: cis_sellers}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BC%D0%B0%D1%80%D0%BA%D0%B5%D1%82%D0%BF%D0%BB%D0%B5%D0%B9%D1%81+%D0%BA%D0%B0%D1%80%D1%82%D0%BE%D1%87%D0%BA%D0%B8+%D1%82%D0%BE%D0%B2%D0%B0%D1%80%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "маркетплейс карточки товара", direction: cis_sellers}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%A7%D0%B5%D1%81%D1%82%D0%BD%D1%8B%D0%B9+%D0%B7%D0%BD%D0%B0%D0%BA+%D0%BC%D0%B0%D1%80%D0%BA%D0%B8%D1%80%D0%BE%D0%B2%D0%BA%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "Честный знак маркировка", direction: cis_sellers}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%98%D0%9F+%D0%B1%D1%83%D1%85%D0%B3%D0%B0%D0%BB%D1%82%D0%B5%D1%80%D0%B8%D1%8F+%D0%BD%D0%B0%D0%BB%D0%BE%D0%B3%D0%B8&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "ИП бухгалтерия налоги", direction: cis_smb_admin}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%AD%D0%94%D0%9E+%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%BE%D0%B1%D0%BE%D1%80%D0%BE%D1%82&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "ЭДО документооборот", direction: cis_smb_admin}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C+%D0%A4%D0%9D%D0%A1&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "отчётность ФНС", direction: cis_smb_admin}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BE%D0%BD%D0%BB%D0%B0%D0%B9%D0%BD-%D0%BA%D0%B0%D1%81%D1%81%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "онлайн-касса", direction: cis_smb_admin}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%96%D0%9A%D0%A5&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "ЖКХ", direction: cis_home_services}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%80%D0%B5%D0%BC%D0%BE%D0%BD%D1%82+%D0%BA%D0%B2%D0%B0%D1%80%D1%82%D0%B8%D1%80%D1%8B&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "ремонт квартиры", direction: cis_home_services}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%83%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D1%8F%D1%8E%D1%89%D0%B0%D1%8F+%D0%BA%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D1%8F&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "управляющая компания", direction: cis_home_services}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%83%D0%BC%D0%BD%D1%8B%D0%B9+%D0%B4%D0%BE%D0%BC+%D1%81%D0%B2%D0%BE%D0%B8%D0%BC%D0%B8+%D1%80%D1%83%D0%BA%D0%B0%D0%BC%D0%B8&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "умный дом своими руками", direction: cis_home_services}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%80%D0%BE%D0%B4%D0%B8%D1%82%D0%B5%D0%BB%D0%B8+%D1%88%D0%BA%D0%BE%D0%BB%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "родители школа", direction: cis_parents_edu}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%8D%D0%BB%D0%B5%D0%BA%D1%82%D1%80%D0%BE%D0%BD%D0%BD%D1%8B%D0%B9+%D0%B4%D0%BD%D0%B5%D0%B2%D0%BD%D0%B8%D0%BA&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "электронный дневник", direction: cis_parents_edu}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%80%D0%B5%D0%BF%D0%B5%D1%82%D0%B8%D1%82%D0%BE%D1%80&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "репетитор", direction: cis_parents_edu}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%95%D0%93%D0%AD+%D0%BF%D0%BE%D0%B4%D0%B3%D0%BE%D1%82%D0%BE%D0%B2%D0%BA%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "ЕГЭ подготовка", direction: cis_parents_edu}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B3%D0%BE%D1%81%D1%83%D1%81%D0%BB%D1%83%D0%B3%D0%B8+%D0%BD%D0%B5%D1%83%D0%B4%D0%BE%D0%B1%D0%BD%D0%BE&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "госуслуги неудобно", direction: cis_daily_services}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B1%D0%B0%D0%BD%D0%BA+%D0%BF%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "банк приложение", direction: cis_daily_services}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B4%D0%BE%D1%81%D1%82%D0%B0%D0%B2%D0%BA%D0%B0+%D0%BA%D1%83%D1%80%D1%8C%D0%B5%D1%80&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "доставка курьер", direction: cis_daily_services}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B7%D0%B0%D0%BF%D0%B8%D1%81%D1%8C+%D0%BA+%D0%B2%D1%80%D0%B0%D1%87%D1%83&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "запись к врачу", direction: cis_daily_services}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BF%D0%BE%D0%BB%D0%B8%D0%BA%D0%BB%D0%B8%D0%BD%D0%B8%D0%BA%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "поликлиника", direction: cis_daily_services}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BC%D0%B0%D0%BB%D1%8B%D0%B9+%D0%B1%D0%B8%D0%B7%D0%BD%D0%B5%D1%81+%D0%B0%D0%B2%D1%82%D0%BE%D0%BC%D0%B0%D1%82%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "малый бизнес автоматизация", direction: small_business_ops}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%82%D0%B0%D0%B1%D0%BB%D0%B8%D1%86%D1%8B+Excel+%D1%83%D1%87%D1%91%D1%82&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "таблицы Excel учёт", direction: small_business_ops}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BA%D0%BE%D1%84%D0%B5%D0%B9%D0%BD%D1%8F&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "кофейня", direction: small_business_ops}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%81%D0%B0%D0%BB%D0%BE%D0%BD+%D0%BA%D1%80%D0%B0%D1%81%D0%BE%D1%82%D1%8B+%D0%B7%D0%B0%D0%BF%D0%B8%D1%81%D1%8C&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "салон красоты запись", direction: small_business_ops}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B0%D1%80%D0%B5%D0%BD%D0%B4%D0%B0+%D0%BA%D0%B2%D0%B0%D1%80%D1%82%D0%B8%D1%80%D1%8B&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "аренда квартиры", direction: real_estate_home}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B8%D0%BF%D0%BE%D1%82%D0%B5%D0%BA%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "ипотека", direction: real_estate_home}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B7%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%89%D0%B8%D0%BA+%D0%BF%D1%80%D0%B8%D1%91%D0%BC%D0%BA%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "застройщик приёмка", direction: real_estate_home}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BF%D0%BE%D0%B8%D1%81%D0%BA+%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%8B+%D1%80%D0%B5%D0%B7%D1%8E%D0%BC%D0%B5&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "поиск работы резюме", direction: hr_careers}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BD%D0%B0%D0%B9%D0%BC+%D1%80%D0%B5%D0%BA%D1%80%D1%83%D1%82%D0%B5%D1%80&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "найм рекрутер", direction: hr_careers}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BB%D0%BE%D0%B3%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0+%D1%81%D0%BA%D0%BB%D0%B0%D0%B4&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "логистика склад", direction: trades_industry}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BF%D1%80%D0%BE%D0%B8%D0%B7%D0%B2%D0%BE%D0%B4%D1%81%D1%82%D0%B2%D0%BE+%D1%83%D1%87%D1%91%D1%82&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "производство учёт", direction: trades_industry}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0+%D1%81%D0%BC%D0%B5%D1%82%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "стройка смета", direction: trades_industry}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%84%D0%B5%D1%80%D0%BC%D0%B5%D1%80&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "фермер", direction: agriculture_garden}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B4%D0%B0%D1%87%D0%B0+%D1%82%D0%B5%D0%BF%D0%BB%D0%B8%D1%86%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "дача теплица", direction: agriculture_garden}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BF%D0%BE%D0%B6%D0%B8%D0%BB%D1%8B%D0%B5+%D1%80%D0%BE%D0%B4%D0%B8%D1%82%D0%B5%D0%BB%D0%B8&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "пожилые родители", direction: seniors_care}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%B2%D0%B5%D1%82%D0%B5%D1%80%D0%B8%D0%BD%D0%B0%D1%80&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "ветеринар", direction: pets}
+      - {url: "https://habr.com/ru/rss/search/?q=%D1%80%D0%B5%D0%BB%D0%BE%D0%BA%D0%B0%D1%86%D0%B8%D1%8F&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "релокация", direction: travel}
+      - {url: "https://habr.com/ru/rss/search/?q=%D0%BF%D1%83%D1%82%D0%B5%D1%88%D0%B5%D1%81%D1%82%D0%B2%D0%B8%D0%B5+%D0%B2%D0%B8%D0%B7%D0%B0&order_by=date&target_type=posts&hl=ru&fl=ru&limit=100", platform: habr, label: "путешествие виза", direction: travel}
   inbox:
     enabled: true              # import files from storage.inbox_dir on every run
 
