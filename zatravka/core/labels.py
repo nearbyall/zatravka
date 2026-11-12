@@ -8,7 +8,7 @@ POST_STATUS = {"new": "новый", "candidate": "в очереди", "filtered"
                "promising": "перспективный", "extracted": "разобран", "error": "ошибка"}
 ACCOUNT_ORIGIN = {"manual": "добавлен вручную", "config": "из config.yaml", "llm": "подобран ИИ",
                   "related": "из похожих тредов"}
-PLATFORM = {"reddit": "Reddit", "x": "X", "threads": "Threads", "rss": "RSS", "import": "Импорт"}
+PLATFORM = {"reddit": "Reddit", "x": "X", "threads": "Threads", "habr": "Хабр", "rss": "RSS", "import": "Импорт"}
 SCORE_LABELS = {"demand": "Спрос", "monetization": "Деньги", "novelty": "Новизна",
                 "feasibility": "Реализуемость", "whitespace": "Свободная ниша", "urgency": "Острота"}
 REGION_SHORT = {"global": "глобально", "north_america": "Сев. Америка", "latam": "Лат. Америка", "eu": "ЕС",
