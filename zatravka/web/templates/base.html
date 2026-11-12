@@ -4,11 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}zatravka{% endblock %}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/app.css?v=1">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 28 12 22 29H10L4 12z' fill='%232747C7'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/app.css?v=2">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 28 12 22 29H10L4 12z' fill='%2321725c'/%3E%3C/svg%3E">
   <script>
     try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
   </script>
@@ -21,28 +18,31 @@
         <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 28 12 22 29H10L4 12z"/><path d="M4 12h24M16 3l-6 9 6 17 6-17z" class="facet"/></svg>
         <span>zatravka</span>
       </a>
+      <p class="nav-caption">ИССЛЕДОВАНИЕ</p>
       <nav class="nav" aria-label="Разделы">
-        <a href="/" {% if nav in ('ideas', 'idea') %}aria-current="page"{% endif %}>Идеи</a>
-        <a href="/posts" {% if nav == 'posts' %}aria-current="page"{% endif %}>Посты</a>
-        <a href="/directions" {% if nav == 'directions' %}aria-current="page"{% endif %}>Направления</a>
-        <a href="/runs" {% if nav == 'runs' %}aria-current="page"{% endif %}>Прогоны</a>
+        <a href="/" {% if nav in ('ideas', 'idea') %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Идеи</a>
+        <a href="/posts" {% if nav == 'posts' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg>Посты</a>
+        <a href="/directions" {% if nav == 'directions' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m16 8-3 5-5 3 3-5z"/></svg>Направления</a>
+        <a href="/runs" {% if nav == 'runs' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2-5M4 3v5h5M12 7v5l3 2"/></svg>Прогоны</a>
       </nav>
       <div class="top-tools">
+        <div class="budget-block"><span class="budget-label">Бюджет ИИ · сегодня</span>
         <span class="spend" title="Расход на ИИ сегодня из дневного бюджета">
           <span class="spend-bar" style="--t: {{ [spent_today / budget if budget else 0, 1] | min }}"></span>
           ${{ '%.3f' | format(spent_today) }} из ${{ '%.2f' | format(budget) }}
-        </span>
+        </span></div>
         <button class="btn btn-primary" id="run-btn" type="button" {% if runner.running %}data-running{% endif %}>
           {% if runner.running %}Прогон идёт{% else %}Запустить прогон{% endif %}
         </button>
         <button class="icon-btn" id="theme-btn" type="button" aria-label="Сменить тему">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg><span>Сменить тему</span>
         </button>
       </div>
     </div>
   </header>
 
   <main id="main" class="wrap">
+    <div class="workspace-head"><span>Рабочее пространство <span aria-hidden="true">/</span> <strong>{{ {"ideas": "Обзор идей", "idea": "Карточка идеи", "posts": "Источники сигналов", "directions": "Направления поиска", "runs": "История прогонов"}.get(nav, "Обзор") }}</strong></span><span class="workspace-tag">Reddit · X · Threads</span></div>
     {% block main %}{% endblock %}
   </main>
 
@@ -60,6 +60,6 @@
     </div>
   </aside>
   <div class="toast" id="toast" role="status" hidden></div>
-  <script src="/static/app.js?v=1" defer></script>
+  <script src="/static/app.js?v=2" defer></script>
 </body>
 </html>

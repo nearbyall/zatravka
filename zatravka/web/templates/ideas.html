@@ -2,19 +2,25 @@
 {% import "_macros.html" as m with context %}
 {% block title %}Идеи — zatravka{% endblock %}
 {% block main %}
-<section class="lede">
-  <h1>Идеи из лент</h1>
-  <p>
-    Прочитано постов: {{ totals.posts }}. Уникальных идей: {{ totals.ideas }}.
-    {% if totals.queue %}Ждут разбора: {{ totals.queue }}.{% endif %}
-    {% if totals.last_run %}Последний прогон {{ totals.last_run.finished_at | ago }}.{% endif %}
-  </p>
+<section class="lede overview-lede">
+  <div><p class="eyebrow">ОТ СИГНАЛА К ВОЗМОЖНОСТИ</p>
+  <h1>Следующая большая идея.<br><span>Начинается с наблюдения.</span></h1>
+  <p>Реальные проблемы из лент — в основу вашего следующего продукта.</p></div>
+  <div class="orbit" aria-hidden="true"><span></span><i></i><b>✦</b></div>
 </section>
+<div class="metrics" aria-label="Сводка исследования">
+  <div><span>Найдено идей</span><strong>{{ totals.ideas }}</strong><small>уникальные возможности</small></div>
+  <div><span>Прочитано постов</span><strong>{{ totals.posts }}</strong><small>из подключённых источников</small></div>
+  <div><span>Ждут разбора</span><strong>{{ totals.queue }}</strong><small>постов в очереди</small></div>
+  <div class="metric-update"><span>Последний прогон</span><strong>{{ totals.last_run.finished_at | ago if totals.last_run else 'Ещё не было' }}</strong><a href="/runs">История и расходы <span aria-hidden="true">↗</span></a></div>
+</div>
 
 {% if spheres %}
 {% set cur = f[param] %}
 {% set extra = {'glob': '0'} if axis == 'region' else {} %}
-<section class="map" aria-labelledby="map-h">
+<details class="map" {% if f.sphere or f.market or axis != 'market' %}open{% endif %}>
+  <summary><span><strong>Карта возможностей</strong><small>Распределение идей по сферам и рынкам</small></span><span class="disclosure-hint">Исследовать <span aria-hidden="true">⌄</span></span></summary>
+  <div class="map-content">
   <div class="map-head">
     <h2 id="map-h">Где идеи: сфера и {{ {'market': 'рынок', 'region': 'регион', 'nature': 'тип продукта'}[axis] }}</h2>
     <nav class="axis" aria-label="Что по горизонтали">
@@ -63,9 +69,16 @@
       </tbody>
     </table>
   </div>
-</section>
+</div>
+</details>
 {% endif %}
 
+<div class="collection-head"><h2>Коллекция идей</h2>
+<nav class="tabs collection-tabs" aria-label="Подборка идей">
+{% for key, label in [('active', 'Все идеи'), ('starred', 'Избранное'), ('in_progress', 'В работе')] %}
+<a href="{{ url_with(request, status=key) }}" {% if f.status == key %}aria-current="page"{% endif %}>{{ label }}</a>
+{% endfor %}
+</nav></div>
 <form class="filters filters-ideas" method="get" action="/" role="search">
   {% if f.sphere %}<input type="hidden" name="sphere" value="{{ f.sphere }}">{% endif %}
   {% if f.market %}<input type="hidden" name="market" value="{{ f.market }}">{% endif %}
@@ -76,56 +89,6 @@
     <input type="search" name="q" value="{{ f.q or '' }}" placeholder="слово, тег, аудитория">
   </label>
   <label class="field">
-    <span>Тип продукта</span>
-    <select name="nature" data-autosubmit>
-      <option value="">любой</option>
-      {% for k, label in NATURE.items() %}
-      <option value="{{ k }}" {% if f.nature == k %}selected{% endif %}>{{ label }} ({{ natures.get(k, 0) }})</option>
-      {% endfor %}
-    </select>
-  </label>
-  <label class="field">
-    <span>Как найдена</span>
-    <select name="insight" data-autosubmit>
-      <option value="">любая</option>
-      {% for k, label in INSIGHT.items() %}
-      <option value="{{ k }}" {% if f.insight == k %}selected{% endif %}>{{ label }} ({{ insights.get(k, 0) }})</option>
-      {% endfor %}
-    </select>
-  </label>
-  <div class="field field-region">
-    <label for="f-region">Регион запуска</label>
-    <select id="f-region" name="region" data-autosubmit>
-      <option value="">любой</option>
-      {% for k, label in tax.regions.items() %}
-      <option value="{{ k }}" {% if f.region == k %}selected{% endif %} title="{{ label }}">{{ k | region }} ({{ regions.get(k, 0) }})</option>
-      {% endfor %}
-    </select>
-    {% if f.region and f.region != 'global' %}
-    <label class="check"><input type="hidden" name="glob" value="{{ '1' if f.with_global else '0' }}" data-glob>
-      <input type="checkbox" {% if f.with_global %}checked{% endif %} data-glob-toggle> и глобальные</label>
-    {% endif %}
-  </div>
-  <label class="field">
-    <span>Площадка</span>
-    <select name="platform" data-autosubmit>
-      <option value="">любая</option>
-      {% for k, label in PLATFORM.items() %}
-      <option value="{{ k }}" {% if f.platform == k %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <label class="field">
-    <span>Статус</span>
-    <select name="status" data-autosubmit>
-      <option value="active" {% if f.status == 'active' %}selected{% endif %}>без отклонённых</option>
-      {% for k, label in STATUS.items() %}
-      <option value="{{ k }}" {% if f.status == k %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-      <option value="all" {% if f.status == 'all' %}selected{% endif %}>все</option>
-    </select>
-  </label>
-  <label class="field">
     <span>Сначала</span>
     <select name="sort" data-autosubmit>
       {% for k, label in [('score','лучшие'),('new','новые'),('mentions','частые'),('demand','спрос'),('novelty','новизна'),('feasibility','реализуемые')] %}
@@ -133,11 +96,66 @@
       {% endfor %}
     </select>
   </label>
-  <label class="field field-num">
-    <span>Балл от</span>
-    <input type="number" name="min_score" min="0" max="10" step="0.5" value="{{ f.min_score if f.min_score is not none else '' }}">
-  </label>
-  <button class="btn" type="submit">Показать</button>
+  <button class="btn btn-primary" type="submit">Найти идеи</button>
+  <details class="filter-more" {% if f.nature or f.insight or f.region or f.platform or f.min_score is not none or f.status not in ('active', 'starred', 'in_progress') %}open{% endif %}>
+    <summary>Фильтры <span aria-hidden="true">⌄</span></summary>
+    <div class="filter-grid">
+      <label class="field">
+        <span>Тип продукта</span>
+        <select name="nature" data-autosubmit>
+          <option value="">любой</option>
+          {% for k, label in NATURE.items() %}
+          <option value="{{ k }}" {% if f.nature == k %}selected{% endif %}>{{ label }} ({{ natures.get(k, 0) }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field">
+        <span>Как найдена</span>
+        <select name="insight" data-autosubmit>
+          <option value="">любая</option>
+          {% for k, label in INSIGHT.items() %}
+          <option value="{{ k }}" {% if f.insight == k %}selected{% endif %}>{{ label }} ({{ insights.get(k, 0) }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="field field-region">
+        <label for="f-region">Регион запуска</label>
+        <select id="f-region" name="region" data-autosubmit>
+          <option value="">любой</option>
+          {% for k, label in tax.regions.items() %}
+          <option value="{{ k }}" {% if f.region == k %}selected{% endif %} title="{{ label }}">{{ k | region }} ({{ regions.get(k, 0) }})</option>
+          {% endfor %}
+        </select>
+        {% if f.region and f.region != 'global' %}
+        <label class="check"><input type="hidden" name="glob" value="{{ '1' if f.with_global else '0' }}" data-glob>
+          <input type="checkbox" {% if f.with_global %}checked{% endif %} data-glob-toggle> и глобальные</label>
+        {% endif %}
+      </div>
+      <label class="field">
+        <span>Площадка</span>
+        <select name="platform" data-autosubmit>
+          <option value="">любая</option>
+          {% for k, label in PLATFORM.items() %}
+          <option value="{{ k }}" {% if f.platform == k %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field">
+        <span>Статус</span>
+        <select name="status" data-autosubmit>
+          <option value="active" {% if f.status == 'active' %}selected{% endif %}>без отклонённых</option>
+          {% for k, label in STATUS.items() %}
+          <option value="{{ k }}" {% if f.status == k %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+          <option value="all" {% if f.status == 'all' %}selected{% endif %}>все</option>
+        </select>
+      </label>
+      <label class="field field-num">
+        <span>Балл от</span>
+        <input type="number" name="min_score" min="0" max="10" step="0.5" value="{{ f.min_score if f.min_score is not none else '' }}">
+      </label>
+    </div>
+  </details>
 </form>
 
 <div class="listhead">

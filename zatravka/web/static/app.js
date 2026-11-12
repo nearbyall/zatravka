@@ -45,6 +45,9 @@
     const group = btn.closest("[data-idea]");
     const id = group.dataset.idea;
     const status = btn.dataset.status;
+    if (group.dataset.busy) return;
+    group.dataset.busy = "true";
+    $$("button", group).forEach((b) => (b.disabled = true));
     try {
       const res = await post(`/api/ideas/${id}/status`, { status });
       const row = btn.closest("[data-row]");
@@ -54,7 +57,7 @@
         star.setAttribute("aria-pressed", String(starred));
         star.dataset.status = starred ? "new" : "starred";
         row?.classList.toggle("is-starred", starred);
-        if (status === "rejected") row?.classList.add("is-gone");
+        row?.classList.toggle("is-gone", status === "rejected");
         toast(status === "rejected" ? "Идея отклонена" : starred ? "Добавлено в избранное" : "Убрано из избранного");
       } else {
         $$("[data-status]", group).forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
@@ -62,6 +65,9 @@
       }
     } catch (e) {
       toast(e.message);
+    } finally {
+      delete group.dataset.busy;
+      $$("button", group).forEach((b) => (b.disabled = false));
     }
   });
 
@@ -81,11 +87,13 @@
 
   $$("[data-toggle-direction]").forEach((sw) =>
     sw.addEventListener("click", async () => {
+      sw.disabled = true;
       try {
         const res = await post(`/api/directions/${sw.dataset.toggleDirection}/toggle`);
         sw.setAttribute("aria-checked", String(res.enabled));
         sw.closest("tr")?.classList.toggle("is-off", !res.enabled);
       } catch (e) { toast(e.message); }
+      finally { sw.disabled = false; }
     })
   );
 
@@ -102,7 +110,6 @@
   async function poll() {
     const res = await fetch("/api/run").then((r) => r.json()).catch(() => null);
     if (!res) return;
-    log.hidden = false;
     $("#runlog-lines").textContent = res.lines.join("\n") || "Готовлю план прогона…";
     $("#runlog-lines").scrollTop = 1e9;
     $("#runlog-time").textContent = fmt(res.elapsed);
@@ -126,10 +133,14 @@
   }
 
   async function startRun() {
+    if (runBtn.disabled) return;
+    runBtn.disabled = true;
     try {
       await post("/api/run", { collect: true });
     } catch (e) {
       if (!String(e.message).includes("уже идёт")) return toast(e.message);
+    } finally {
+      runBtn.disabled = false;
     }
     $("#runlog-title").textContent = "Прогон идёт";
     $("#runlog-foot").hidden = true;
@@ -141,5 +152,5 @@
   runBtn?.addEventListener("click", () => (runBtn.hasAttribute("data-running") ? (log.hidden = false) : startRun()));
   $$("[data-run]").forEach((b) => b.addEventListener("click", startRun));
   $("#runlog-close")?.addEventListener("click", () => (log.hidden = true));
-  if (runBtn?.hasAttribute("data-running")) { polling = setInterval(poll, 3000); poll(); }
+  if (runBtn?.hasAttribute("data-running")) { log.hidden = false; polling = setInterval(poll, 3000); poll(); }
 })();
