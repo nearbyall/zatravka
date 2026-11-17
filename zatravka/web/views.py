@@ -89,13 +89,25 @@ def page_count(total: int) -> int:
     return (total + PAGE_SIZE - 1) // PAGE_SIZE
 
 
+def page_window(page: int, pages: int, around: int = 2) -> list[int | None]:
+    """Page numbers to show: the first, the last and a few around the current one; None marks a gap."""
+    shown = sorted({1, pages, *range(max(1, page - around), min(pages, page + around) + 1)})
+    out: list[int | None] = []
+    for p in shown:
+        if out and p - (out[-1] or 0) > 1:
+            # A gap of one page shows that page instead of an ellipsis.
+            out.append(p - 1 if p - (out[-1] or 0) == 2 else None)
+        out.append(p)
+    return out
+
+
 def build_templates(tax: Taxonomy) -> Jinja2Templates:
     templates = Jinja2Templates(directory=TEMPLATES)
     env = templates.env
     env.globals.update(
         tax=tax, ACCOUNT_ORIGIN=ACCOUNT_ORIGIN, NATURE=NATURE, INSIGHT=INSIGHT, STATUS=STATUS,
         POST_STATUS=POST_STATUS, PLATFORM=PLATFORM, SCORE_LABELS=SCORE_LABELS, AXES=MAP_AXES, loads=loads,
-        url_with=url_with, page_url=page_url,
+        url_with=url_with, page_url=page_url, page_window=page_window,
     )
     env.filters.update(
         ago=ago, plural=plural, safe_url=safe_url,

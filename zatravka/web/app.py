@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.types import Scope
 
 from ..config import Config, load_config
 from ..core.taxonomy import resolve_taxonomy
@@ -28,6 +30,23 @@ SHOWCASE_HEADERS = {
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "no-referrer",
 }
+# Pages are mostly repeated markup: gzip shrinks the ideas page about tenfold.
+GZIP_MIN_BYTES = 1000
+
+
+class CachedStatic(StaticFiles):
+    """Assets are linked with ?v=N, so a browser may keep them until the version changes."""
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+
+def add_static(app: FastAPI) -> None:
+    app.add_middleware(GZipMiddleware, minimum_size=GZIP_MIN_BYTES)
+    app.mount("/static", CachedStatic(directory=STATIC), name="static")
 
 
 def create_app(cfg: Config | None = None) -> FastAPI:
@@ -38,7 +57,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     app = FastAPI(title="zatravka", docs_url="/api/docs", redoc_url=None)
     app.state.web = WebState(cfg=cfg, db=db, tax=tax, templates=build_templates(tax),
                              runner=Runner(cfg.base_dir / "config.yaml"))
-    app.mount("/static", StaticFiles(directory=STATIC), name="static")
+    add_static(app)
     app.include_router(ideas.router)
     app.include_router(ideas.manage)
     app.include_router(pages.router)
@@ -60,6 +79,6 @@ def create_showcase_app(cfg: Config, snapshot: Path) -> FastAPI:
         response.headers.update(SHOWCASE_HEADERS)
         return response
 
-    app.mount("/static", StaticFiles(directory=STATIC), name="static")
+    add_static(app)
     app.include_router(ideas.router)
     return app

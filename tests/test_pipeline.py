@@ -22,7 +22,7 @@ from zatravka.sources.reddit import RedditSource, parse_rss_comments, parse_rss_
 from zatravka.pipeline.stages.digest import run_digest
 from zatravka.storage.snapshot import write_snapshot
 from zatravka.web.app import create_app, create_showcase_app
-from zatravka.web.views import plural
+from zatravka.web.views import page_window, plural
 
 LISTING = (FIXTURES / "reddit_listing.atom").read_bytes()
 COMMENTS = (FIXTURES / "reddit_comments.atom").read_bytes()
@@ -229,6 +229,15 @@ def test_plural():
     assert plural(3, "идея", "идеи", "идей") == "3 идеи"
     assert plural(11, "идея", "идеи", "идей") == "11 идей"
     assert plural(22, "идея", "идеи", "идей") == "22 идеи"
+
+
+def test_page_window():
+    assert page_window(1, 1) == [1]
+    assert page_window(1, 5) == [1, 2, 3, 4, 5]
+    assert page_window(1, 159) == [1, 2, 3, None, 159]
+    assert page_window(5, 159) == [1, 2, 3, 4, 5, 6, 7, None, 159]
+    assert page_window(80, 159) == [1, None, 78, 79, 80, 81, 82, None, 159]
+    assert page_window(159, 159) == [1, None, 157, 158, 159]
 
 
 def test_region_focus_and_hints(ctx, fake_reddit):

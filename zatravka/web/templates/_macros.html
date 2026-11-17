@@ -1,9 +1,15 @@
 {% macro pager(request, page, pages) %}
 {% if pages > 1 %}
 <nav class="pager" aria-label="Страницы">
-  {% if page > 1 %}<a class="btn" href="{{ page_url(request, page - 1) }}">Назад</a>{% endif %}
-  <span>Страница {{ page }} из {{ pages }}</span>
-  {% if page < pages %}<a class="btn" href="{{ page_url(request, page + 1) }}">Дальше</a>{% endif %}
+  {% if page > 1 %}<a class="btn" href="{{ page_url(request, page - 1) }}" rel="prev">Назад</a>{% endif %}
+  <ol class="pages">
+    {% for p in page_window(page, pages) %}
+    {% if p is none %}<li class="pages-gap" aria-hidden="true">…</li>
+    {% elif p == page %}<li><span aria-current="page">{{ p }}</span></li>
+    {% else %}<li><a href="{{ page_url(request, p) }}" aria-label="Страница {{ p }}">{{ p }}</a></li>{% endif %}
+    {% endfor %}
+  </ol>
+  {% if page < pages %}<a class="btn" href="{{ page_url(request, page + 1) }}" rel="next">Дальше</a>{% endif %}
 </nav>
 {% endif %}
 {% endmacro %}
