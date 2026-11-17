@@ -56,8 +56,9 @@ def ideas_where(*, market: str | None = None, sphere: str | None = None, nature:
                      " OR i.tags_json LIKE ? OR i.audience LIKE ?)")
         params += [f"%{q}%"] * 6
     if platform:
-        where.append("EXISTS (SELECT 1 FROM ideas m JOIN idea_evidence e ON e.idea_id=m.id"
-                     " JOIN posts p ON p.id=e.post_id WHERE m.cluster_id=i.id AND p.platform=?)")
+        # An uncorrelated set: a per-idea EXISTS rescanned every post of the platform for each idea.
+        where.append("i.id IN (SELECT m.cluster_id FROM posts p JOIN idea_evidence e ON e.post_id=p.id"
+                     " JOIN ideas m ON m.id=e.idea_id WHERE p.platform=?)")
         params.append(platform)
     return " AND ".join(where), params
 

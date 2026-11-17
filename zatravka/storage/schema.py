@@ -162,4 +162,8 @@ MIGRATIONS = [
         PRIMARY KEY (platform, username)
     );
     """,
+    # v4: evidence lookup by post, for the platform filter
+    """
+    CREATE INDEX IF NOT EXISTS idea_evidence_post ON idea_evidence(post_id);
+    """,
 ]
